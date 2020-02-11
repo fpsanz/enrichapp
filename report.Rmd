@@ -1,0 +1,91 @@
+---
+title: "RNAseq viewer report"
+author: "Fps"
+#date: `r format(Sys.time(), "%d %b %Y")`
+output:
+  rmdformats::readthedown:
+    highlight: kate
+params:
+  n: NA
+  bp: NA
+  cc: NA
+  mf: NA
+---
+
+
+```{r  echo=FALSE, include=FALSE, comment=FALSE}
+setwd("/datos/repos/enrich")
+library(shinydashboard)
+library(limma)
+library(tidyverse)
+library(DT)
+library(purrr)
+library(plotly)
+source("utils.R")
+load("genes.Rdata")
+genes <- a
+kgg <- readRDS("kgg.Rds")
+gos <- readRDS("gos.Rds")
+```
+
+## Kegg enrichment 
+
+```{r echo=FALSE}
+predata <- kegg2DT(kgg[params$n, ], genes, nrows = length(params$n))
+        datatable2(
+            predata,
+            vars = c("genes"),
+            escape = FALSE,
+            opts = list(pageLength = 10, white_space = "normal"))
+```
+
+```{r  echo=FALSE}
+plotKegg(enrichdf = kgg[params$n,], nrows = length(params$n) ) 
+```
+
+```{r echo=FALSE, warning=FALSE}
+chordPlot(kgg[params$n, ], nRows = length(params$n), orderby = "P.DE")
+```
+
+## GO Biological proccess enrichment
+
+```{r echo=FALSE, eval=TRUE}
+gosbp <- gos[gos$Ont=="BP",]
+goDT <- go2DT(enrichdf = gosbp[params$bp, ], data = genes, nrows = length(params$bp))
+datatable2(goDT, vars = c("genes"),
+           escape = FALSE,
+           opts = list(pageLength = 10, white_space = "normal"))
+```
+
+```{r echo=FALSE, eval=TRUE}
+plotGO(enrichdf = gosbp[params$bp,], nrows = length(params$bp), ont="BP")
+```
+
+
+## GO Molecular function enrichment
+
+```{r echo=FALSE, eval=TRUE}
+gosmf <- gos[gos$Ont=="MF",]
+goDT <- go2DT(enrichdf = gosmf[params$mf, ], data = genes, nrows = length(params$mf))
+datatable2(goDT, vars = c("genes"),
+           escape = FALSE,
+           opts = list(pageLength = 10, white_space = "normal"))
+```
+
+```{r echo=FALSE, eval=TRUE}
+plotGO(enrichdf = gosmf[params$mf,], nrows = length(params$mf), ont="MF")
+```
+
+## GO Cellular component enrichment 
+
+```{r echo=FALSE, eval=TRUE}
+goscc <- gos[gos$Ont=="CC",]
+goDT <- go2DT(enrichdf = goscc[params$cc, ], data = genes, nrows = length(params$cc))
+datatable2(goDT, vars = c("genes"),
+           escape = FALSE,
+           opts = list(pageLength = 10, white_space = "normal"))
+```
+
+```{r echo=FALSE, eval=TRUE}
+plotGO(enrichdf = goscc[params$cc,], nrows = length(params$cc), ont="CC")
+```
