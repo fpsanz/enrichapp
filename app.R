@@ -6,23 +6,18 @@ library(purrr)
 library(plotly)
 library(chorddiag)
 source("utils.R")
-  
-
+source("global.R")
 #genes <- read.csv("genes.csv", header = T, stringsAsFactors = F, row.names = 1)
 #genes <- genes %>% filter(!is.na(ENTREZID)& !ENTREZID=="NULL" )
 #save(genes, file = "genes.Rdata")
-
-load("genes.Rdata")
-
+# load("genes.Rdata")
+# gos <- readRDS("gos.Rds")
+# goDT <- go2DT(enrichdf = gos, data = genes)
 #kgg <- customKegg(genes, species = "Mm", species.KEGG = "mmu")
 #saveRDS(kgg, "kgg.Rds")
-kgg <- readRDS("kgg.Rds")
+#kgg <- readRDS("kgg.Rds")
 #gos <- customGO(genes,species = "Mm")
 #saveRDS(gos,"gos.Rds")
-gos <- readRDS("gos.Rds")
-goDT <- go2DT(enrichdf = gos, data = genes)
-
-
  ### HEADER ############
 header <- dashboardHeader(title = "RNAseq viewer and report App", 
                   titleWidth = 300, 
@@ -133,13 +128,32 @@ ui <- dashboardPage(title="Rnaseq viewer and report",
                     ) # fin del UI
 
 ########################################## SERVER #################################################
-
 server <- function(input, output) {
-    datos <- reactive({
-      datos <- readRDS(deseqFile$datapath)
+    data <- reactiveValues(genes=NULL)
+    dat <- reactiveValues(kgg=NULL)
+    file <- reactiveValues(f=NULL)
+    observeEvent(input$deseqFile, {
+        file$f <- input$deseqFile$datapath
     })
+    kk <- observe({
+        fileg <- file$f
+        if(!is.null(fileg)){
+            filegenes <- file()
+            source("aux.R", local=FALSE)
+            dat$kgg <- auxkgg
+            data$genes <-auxgenes
+        }
+    })
+    # generate reactive variable ###################
+    rows <- reactive({input$table_rows_selected})
+    bprows <- reactive({input$tableBP_rows_selected})
+    mfrows <- reactive({input$tableMF_rows_selected})
+    ccrows <- reactive({input$tableCC_rows_selected})
 # view kegg table #####################################
     output$table <- DT::renderDataTable(server=TRUE,{
+        validate(need(data$genes, "Load file to render table"))
+        kgg <- dat$kgg
+        genes <- data$genes
         predata <- kegg2DT(kgg, genes)
         datatable2(
             predata,
@@ -147,20 +161,19 @@ server <- function(input, output) {
             filter = list(position="top", clear=FALSE),
             escape = FALSE,
             opts = list(pageLength = 10, white_space = "normal"))
-    })
-# generate reactive variable ###################
-    rows <- reactive({input$table_rows_selected})
-    bprows <- reactive({input$tableBP_rows_selected})
-    mfrows <- reactive({input$tableMF_rows_selected})
-    ccrows <- reactive({input$tableCC_rows_selected})
+    }) 
 # view kegg plot ################
     output$keggPlot <- renderPlotly ({
+        validate(need(dat$kgg, "Load file to render BarPlot"))
+        kgg <- dat$kgg
         nr <- rows()
         if(is.null(nr)){nr <- c(1:10)}
         plotKegg(enrichdf = kgg[nr,], nrows = length(nr))
     })
 # generate view kegg chordiag plot
     output$keggChord <- renderChorddiag({
+        validate(need(dat$kgg, "Load file to render ChordPlot"))
+        kgg <- dat$kgg
         nr <- rows()
         if(is.null(nr)){nr <- c(1:10)}
         chordPlot(kgg[nr, ], nRows = length(nr), orderby = "P.DE")
