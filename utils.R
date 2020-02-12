@@ -220,14 +220,10 @@ customGO <- function(data, universe = NULL, species = "Hs", prior.prob = NULL,
     names(data) <- c("SYMBOL","ENTREZID")
     de <- data
     de <- as.character(de$ENTREZID)
-    suppressPackageStartupMessages(OK <- requireNamespace("GO.db",
-        quietly = TRUE))
-    if (!OK)
-        stop("GO.db package required but not installed (or can't be loaded)")
-    suppressPackageStartupMessages(OK <- requireNamespace("AnnotationDbi",
-        quietly = TRUE))
-    if (!OK)
-        stop("AnnotationDbi package required but not installed (or can't be loaded)")
+    suppressPackageStartupMessages(OK <- requireNamespace("GO.db",quietly = TRUE))
+    if (!OK) stop("GO.db package required but not installed (or can't be loaded)")
+    suppressPackageStartupMessages(OK <- requireNamespace("AnnotationDbi",quietly = TRUE))
+    if (!OK) stop("AnnotationDbi package required but not installed (or can't be loaded)")
     orgPkg <- paste0("org.", species, ".eg.db")
     suppressPackageStartupMessages(OK <- requireNamespace(orgPkg, quietly = TRUE))
     if (!OK)
@@ -641,9 +637,9 @@ go2DT <- function(enrichdf, data, orderby = NULL, nrows = NULL) {
     CAup <- enrichdf2[, c(1, 2, 3, 4, 5, 7, 8, 9)]
     CAup$genes <- gsub(",", ", ", CAup$genes)
     for (i in seq(1:length(CAup$genes))) {
-        mg <- as.numeric(unlist(strsplit(CAup$genes[i], ", ")))
-        mg2 <- match(mg, data$ENTREZID)
-        CAup$genes[i] <- paste0(data[mg2, 1], collapse = ", ")
+       mg <- as.numeric(unlist(strsplit(CAup$genes[i], ", ")))
+       mg2 <- match(mg, data$ENTREZID)
+       CAup$genes[i] <- paste0(data[mg2, 1], collapse = ", ")
     }
     splitGenes <- strsplit(CAup$genes, ", ")
     CAup$genes <- lapply(
@@ -724,6 +720,7 @@ getGOlevel <- function(){
         data.frame(
             id = c("GO:0008150","GO:0003674","GO:0005575"),
             level= 0))
+    GOlevel <- aggregate(level~id, GOlevel, function(x)x[which.min(abs(x))])
     return(GOlevel)
 }
 
@@ -788,7 +785,7 @@ plotGO <- function(enrichdf, nrows = 30, orderby=NULL, ont){
                 orientation = "v") %>%
         layout(margin = list(l=100), yaxis = list(title=""),
                title=dataTitle[[ont]][1])
-    print(p)
+    return(p)
 }
 
 plotKegg <- function(enrichdf, nrows = 30, orderby=NULL){
@@ -808,6 +805,6 @@ plotKegg <- function(enrichdf, nrows = 30, orderby=NULL){
                 orientation = "v") %>%
         layout(margin = list(l=100), yaxis = list(title=""),
                title="Kegg pathways")
-    print(p)
+    return(p)
 }
 

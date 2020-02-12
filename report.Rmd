@@ -14,7 +14,7 @@ params:
 
 
 ```{r  echo=FALSE, include=FALSE, comment=FALSE}
-setwd("/datos/repos/enrich")
+setwd("/datos/repos/enrichapp")
 library(shinydashboard)
 library(limma)
 library(tidyverse)
@@ -23,7 +23,6 @@ library(purrr)
 library(plotly)
 source("utils.R")
 load("genes.Rdata")
-genes <- a
 kgg <- readRDS("kgg.Rds")
 gos <- readRDS("gos.Rds")
 ```

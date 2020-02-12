@@ -6,16 +6,22 @@ library(purrr)
 library(plotly)
 library(chorddiag)
 source("utils.R")
+  
 
+#genes <- read.csv("genes.csv", header = T, stringsAsFactors = F, row.names = 1)
+#genes <- genes %>% filter(!is.na(ENTREZID)& !ENTREZID=="NULL" )
+#save(genes, file = "genes.Rdata")
 
 load("genes.Rdata")
-genes <- a
+
 #kgg <- customKegg(genes, species = "Mm", species.KEGG = "mmu")
 #saveRDS(kgg, "kgg.Rds")
 kgg <- readRDS("kgg.Rds")
 #gos <- customGO(genes,species = "Mm")
 #saveRDS(gos,"gos.Rds")
 gos <- readRDS("gos.Rds")
+goDT <- go2DT(enrichdf = gos, data = genes)
+
 
  ### HEADER ############
 header <- dashboardHeader(title = "RNAseq viewer and report App", 
@@ -23,14 +29,25 @@ header <- dashboardHeader(title = "RNAseq viewer and report App",
                   dropdownMenuOutput("messageMenu")
                   )
 ### SIDEBAR ##########
- sidebar <- dashboardSidebar(sidebarMenu(
-      menuItem("Kegg Enrichment", tabName = "kegg", icon = icon("chart-bar")),
-      menuItem("GO Enrichment", tabName = "go", icon = icon("chart-bar")),
-      downloadButton("report", "Generate report")
-    )
-    )
+sidebar <- dashboardSidebar(fileInput("deseqFile",
+                                      "Choose RDS with Deseq object",
+                                      placeholder = "RDS file"),
+                            sidebarMenu(
+                              menuItem(
+                                "Kegg Enrichment",
+                                tabName = "kegg",
+                                icon = icon("chart-bar")
+                              ),
+                              menuItem(
+                                "GO Enrichment",
+                                tabName = "go",
+                                icon = icon("chart-bar")
+                              ),
+                              downloadButton("report", "Generate report")
+                            ))
 ### BODY ###############
-body <- dashboardBody(tabItems(
+body <- dashboardBody(
+  tabItems(
     # First tab content
     tabItem(
         tabName = "kegg",
@@ -118,8 +135,11 @@ ui <- dashboardPage(title="Rnaseq viewer and report",
 ########################################## SERVER #################################################
 
 server <- function(input, output) {
+    datos <- reactive({
+      datos <- readRDS(deseqFile$datapath)
+    })
 # view kegg table #####################################
-    output$table <- DT::renderDataTable({
+    output$table <- DT::renderDataTable(server=TRUE,{
         predata <- kegg2DT(kgg, genes)
         datatable2(
             predata,
@@ -146,8 +166,7 @@ server <- function(input, output) {
         chordPlot(kgg[nr, ], nRows = length(nr), orderby = "P.DE")
     })
 # view Go table BP #####################
-    output$tableBP <- DT::renderDataTable(server = TRUE,{
-    goDT <- go2DT(enrichdf = gos, data = genes)
+    output$tableBP <- DT::renderDataTable(server=TRUE,{
     datatable2(goDT[goDT$Ont=="BP",], vars = c("genes"),
                filter = list(position="top", clear=FALSE),
                escape = FALSE,
@@ -163,11 +182,11 @@ server <- function(input, output) {
     })
 # view Go table MF #####################
     output$tableMF <- DT::renderDataTable({
-      goMF <- go2DT(enrichdf = gos, data = genes)
-      datatable2(goMF[goMF$Ont=="MF",], vars = c("genes"),
+      datatable2(goDT[goDT$Ont=="MF",], vars = c("genes"),
                  filter = list(position="top", clear=FALSE),
                  escape = FALSE,
-                 opts = list(pageLength = 10, white_space = "normal")
+                 opts = list(pageLength = 10, white_space = "normal",
+                             ajax = list(serverSide = TRUE, processing = TRUE))
       )
     })
 # view go plots MF #####################
@@ -178,12 +197,12 @@ server <- function(input, output) {
         plotGO(enrichdf = gosMF[mfnr, ], nrows = length(mfnr), ont = "MF")
     })
 # view Go table CC #####################
-    output$tableCC <- DT::renderDataTable({
-      goDT <- go2DT(enrichdf = gos, data = genes)
+    output$tableCC <- DT::renderDataTable(server=TRUE,{
       datatable2(goDT[goDT$Ont=="CC",], vars = c("genes"),
                  filter = list(position="top", clear=FALSE),
                  escape = FALSE,
-                 opts = list(pageLength = 10, white_space = "normal")
+                 opts = list(pageLength = 10, white_space = "normal",
+                             ajax = list(serverSide = TRUE, processing = TRUE))
       )
     })
 # view go plots CC #####################
