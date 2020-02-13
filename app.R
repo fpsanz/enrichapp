@@ -6,7 +6,8 @@ library(purrr)
 library(plotly)
 library(chorddiag)
 source("utils.R")
-source("global.R")
+
+
 #genes <- read.csv("genes.csv", header = T, stringsAsFactors = F, row.names = 1)
 #genes <- genes %>% filter(!is.na(ENTREZID)& !ENTREZID=="NULL" )
 #save(genes, file = "genes.Rdata")
@@ -18,6 +19,8 @@ source("global.R")
 #kgg <- readRDS("kgg.Rds")
 #gos <- customGO(genes,species = "Mm")
 #saveRDS(gos,"gos.Rds")
+
+  
  ### HEADER ############
 header <- dashboardHeader(title = "RNAseq viewer and report App", 
                   titleWidth = 300, 
@@ -42,82 +45,99 @@ sidebar <- dashboardSidebar(fileInput("deseqFile",
                             ))
 ### BODY ###############
 body <- dashboardBody(
+  shiny::tagList(shiny::tags$head(
+    shiny::tags$link(rel = "stylesheet", type = "text/css", href = "busystyle.css"),
+    shiny::tags$script(type = "text/javascript", src = "busy.js")
+  )),
+  div(class = "busy",
+      p("Loading data and computing enrichment, please be patient..."),
+      img(src = "dna.gif")),
   tabItems(
     # First tab content
     tabItem(
-        tabName = "kegg",
-        fluidRow(column(
-            width = 8,
-            offset = 2,
-            dataTableOutput("table")
-        )),
-        hr(),
-        fluidRow(
-            class = "text-center",
-            column(
-                align = "center",
-                offset = 2,
-                plotlyOutput("keggPlot"),
-                width = 5
-            ),
-            column(
-                align = "center",
-                offset = 0,
-                chorddiagOutput("keggChord", width = "500px", height = "500px"),
-                width = 4
-            )
-        )
-    ),
-    tabItem( # second tab GO tab
-        tabName = "go",
-        h3("Biological proccess"),
-        fluidRow(column( # table BP
-            width = 8,
-            offset = 2,
-            dataTableOutput("tableBP")
-        )),
-        hr(),
-        fluidRow( #plot BP
-            class = "text-center",
-            column(
-                align = "center",
-                offset = 2,
-                plotlyOutput("plotBP"),
-                width = 8
-            )
+      tabName = "kegg",
+      fluidRow(column(
+        width = 8,
+        offset = 2,
+        dataTableOutput("table")
+      )),
+      hr(),
+      fluidRow(
+        class = "text-center",
+        column(
+          align = "center",
+          offset = 2,
+          plotlyOutput("keggPlot"),
+          width = 5
         ),
-        h3("Molecular Functions"),
-        fluidRow(column( # table MF
-            width = 8,
-            offset = 2,
-            dataTableOutput("tableMF")
-        )),
-        hr(),
-        fluidRow( # plot MF
-            class = "text-center",
-            column(
-                align = "center",
-                offset = 2,
-                plotlyOutput("plotMF"),
-                width = 8
-            )),
-        h3("Cellular components"),
-        fluidRow(column( # table CC
-            width = 8,
-            offset = 2,
-            dataTableOutput("tableCC")
-        )),
-        hr(),
-        fluidRow( # plot CC
-            class = "text-center",
-            column(
-                align = "center",
-                offset = 2,
-                plotlyOutput("plotCC"),
-                width = 8
-            ))
-    )
-))
+        column(
+          align = "center",
+          offset = 0,
+          chorddiagOutput("keggChord", width = "500px", height = "500px"),
+          width = 4
+        )
+      )
+    ),
+    tabItem(
+      # second tab GO tab
+      tabName = "go",
+      h3("Biological proccess"),
+      fluidRow(column(
+        # table BP
+        width = 8,
+        offset = 2,
+        dataTableOutput("tableBP")
+      )),
+      hr(),
+      fluidRow(
+        #plot BP
+        class = "text-center",
+        column(
+          align = "center",
+          offset = 2,
+          plotlyOutput("plotBP"),
+          width = 8
+        )
+      ),
+      h3("Molecular Functions"),
+      fluidRow(column(
+        # table MF
+        width = 8,
+        offset = 2,
+        dataTableOutput("tableMF")
+      )),
+      hr(),
+      fluidRow(
+        # plot MF
+        class = "text-center",
+        column(
+          align = "center",
+          offset = 2,
+          plotlyOutput("plotMF"),
+          width = 8
+        )
+      ),
+      h3("Cellular components"),
+      fluidRow(column(
+        # table CC
+        width = 8,
+        offset = 2,
+        dataTableOutput("tableCC")
+      )),
+      hr(),
+      fluidRow(
+        # plot CC
+        class = "text-center",
+        column(
+          align = "center",
+          offset = 2,
+          plotlyOutput("plotCC"),
+          width = 8
+        )
+      ) #fin fluidrow
+    ) # tab GO
+  ) # fin tab items
+)# fin dashboardbody
 
 ########################################## UI #################################################
 
@@ -130,31 +150,31 @@ ui <- dashboardPage(title="Rnaseq viewer and report",
 ########################################## SERVER #################################################
 server <- function(input, output) {
     data <- reactiveValues(genes=NULL)
-    dat <- reactiveValues(kgg=NULL)
-    file <- reactiveValues(f=NULL)
+    goDT <- reactiveValues(dt=NULL)
+    kgg <- reactiveValues(k=NULL)
+    go <- reactiveValues(g=NULL)
+    kggDT <- reactiveValues(predata=NULL)
+    
     observeEvent(input$deseqFile, {
-        file$f <- input$deseqFile$datapath
+        #source("aux.R", local = FALSE)
+        data$genes <- loadGenes(input$deseqFile$datapath)
+        go$g <- customGO(data$genes, species = "Mm")
+        kgg$k <- customKegg(data$genes, species = "Mm", species.KEGG = "mmu")
+        goDT$dt <- go2DT(enrichdf = go$g, data = data$genes )
+        kggDT$predata <- kegg2DT(kgg$k, data$genes)
     })
-    kk <- observe({
-        fileg <- file$f
-        if(!is.null(fileg)){
-            filegenes <- file()
-            source("aux.R", local=FALSE)
-            dat$kgg <- auxkgg
-            data$genes <-auxgenes
-        }
-    })
-    # generate reactive variable ###################
+  # generate reactive variable ###################
     rows <- reactive({input$table_rows_selected})
     bprows <- reactive({input$tableBP_rows_selected})
     mfrows <- reactive({input$tableMF_rows_selected})
     ccrows <- reactive({input$tableCC_rows_selected})
-# view kegg table #####################################
+  # view kegg table #####################################
     output$table <- DT::renderDataTable(server=TRUE,{
         validate(need(data$genes, "Load file to render table"))
-        kgg <- dat$kgg
-        genes <- data$genes
-        predata <- kegg2DT(kgg, genes)
+        kgg <- kgg$k
+        #genes <- data$genes
+        predata <- kggDT$predata
+        #predata <- kegg2DT(kgg, genes)
         datatable2(
             predata,
             vars = c("genes"),
@@ -162,39 +182,45 @@ server <- function(input, output) {
             escape = FALSE,
             opts = list(pageLength = 10, white_space = "normal"))
     }) 
-# view kegg plot ################
+# KEGG barplot ################
     output$keggPlot <- renderPlotly ({
-        validate(need(dat$kgg, "Load file to render BarPlot"))
-        kgg <- dat$kgg
+        validate(need(data$genes, "Load file to render BarPlot"))
+        kgg <- kgg$k
         nr <- rows()
         if(is.null(nr)){nr <- c(1:10)}
         plotKegg(enrichdf = kgg[nr,], nrows = length(nr))
     })
-# generate view kegg chordiag plot
+# KEGG chordiag plot
     output$keggChord <- renderChorddiag({
-        validate(need(dat$kgg, "Load file to render ChordPlot"))
-        kgg <- dat$kgg
+        validate(need(data$genes, "Load file to render ChordPlot"))
+        kgg <- kgg$k
         nr <- rows()
         if(is.null(nr)){nr <- c(1:10)}
         chordPlot(kgg[nr, ], nRows = length(nr), orderby = "P.DE")
     })
-# view Go table BP #####################
+# GO table BP #####################
     output$tableBP <- DT::renderDataTable(server=TRUE,{
+    validate(need(goDT$dt, "Load file to render table"))
+    goDT <- goDT$dt
     datatable2(goDT[goDT$Ont=="BP",], vars = c("genes"),
                filter = list(position="top", clear=FALSE),
                escape = FALSE,
                opts = list(pageLength = 10, white_space = "normal")
                )
     })
-# view go plots BP #####################
+# GO plots BP #####################
     output$plotBP <- renderPlotly({
+      validate(need(go$g, "Load file to render plot"))
+       gos <- go$g
         bpnr <- bprows()
         if(is.null(bpnr)){bpnr <- c(1:10)}
         gosBP <- gos[gos$Ont=="BP",]
         plotGO(enrichdf = gosBP[bpnr, ], nrows = length(bpnr), ont="BP")
     })
-# view Go table MF #####################
+# GO table MF #####################
     output$tableMF <- DT::renderDataTable({
+      validate(need(goDT$dt, "Load file to render table"))
+      goDT <- goDT$dt
       datatable2(goDT[goDT$Ont=="MF",], vars = c("genes"),
                  filter = list(position="top", clear=FALSE),
                  escape = FALSE,
@@ -204,6 +230,8 @@ server <- function(input, output) {
     })
 # view go plots MF #####################
     output$plotMF <- renderPlotly({
+        validate(need(go$g, "Load file to render plot"))
+        gos <- go$g
         mfnr <- mfrows()
         if(is.null(mfnr)){mfnr <- c(1:10)}
         gosMF <- gos[gos$Ont=="MF",]
@@ -211,6 +239,8 @@ server <- function(input, output) {
     })
 # view Go table CC #####################
     output$tableCC <- DT::renderDataTable(server=TRUE,{
+      validate(need(goDT$dt, "Load file to render table"))
+      goDT <- goDT$dt
       datatable2(goDT[goDT$Ont=="CC",], vars = c("genes"),
                  filter = list(position="top", clear=FALSE),
                  escape = FALSE,
@@ -220,6 +250,8 @@ server <- function(input, output) {
     })
 # view go plots CC #####################
     output$plotCC <- renderPlotly({
+        validate(need(go$g, "Load file to render plot"))
+        gos <- go$g
         ccnr <- ccrows()
         if(is.null(ccnr)){ccnr <- c(1:10)}
         gosCC <- gos[gos$Ont=="CC",]

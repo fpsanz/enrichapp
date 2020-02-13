@@ -808,3 +808,7 @@ plotKegg <- function(enrichdf, nrows = 30, orderby=NULL){
     return(p)
 }
 
+loadGenes <- function(filegenes){
+  load(filegenes)
+  auxgenes <- genes
+}
