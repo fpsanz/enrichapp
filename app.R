@@ -5,6 +5,7 @@ library(DT)
 library(purrr)
 library(plotly)
 library(chorddiag)
+library(DESeq2)
 source("utils.R")
 
 
@@ -27,10 +28,16 @@ header <- dashboardHeader(title = "RNAseq viewer and report App",
                   dropdownMenuOutput("messageMenu")
                   )
 ### SIDEBAR ##########
-sidebar <- dashboardSidebar(fileInput("deseqFile",
+sidebar <- dashboardSidebar(sidebarMenu(
+                            menuItem(
+                            fileInput("deseqFile",
                                       "Choose RDS with Deseq object",
-                                      placeholder = "RDS file"),
+                                      placeholder = "RDS file"))),
                             sidebarMenu(
+                              menuItem("Preview dataset",
+                                       tabName = "preview",
+                                       icon = icon("eye")),
+                              uiOutput("sampleGroup"),
                               menuItem(
                                 "Kegg Enrichment",
                                 tabName = "kegg",
@@ -41,102 +48,132 @@ sidebar <- dashboardSidebar(fileInput("deseqFile",
                                 tabName = "go",
                                 icon = icon("chart-bar")
                               ),
+                              menuItem(
                               downloadButton("report", "Generate report")
+                              )
                             ))
 ### BODY ###############
 body <- dashboardBody(
-  shiny::tagList(shiny::tags$head(
-    shiny::tags$link(rel = "stylesheet", type = "text/css", href = "busystyle.css"),
-    shiny::tags$script(type = "text/javascript", src = "busy.js")
-  )),
-  div(class = "busy",
-      p("Loading data and computing enrichment, please be patient..."),
-      img(src = "dna.gif")),
-  tabItems(
-    # First tab content
-    tabItem(
-      tabName = "kegg",
-      fluidRow(column(
-        width = 8,
-        offset = 2,
-        dataTableOutput("table")
-      )),
-      hr(),
-      fluidRow(
-        class = "text-center",
-        column(
-          align = "center",
-          offset = 2,
-          plotlyOutput("keggPlot"),
-          width = 5
-        ),
-        column(
-          align = "center",
-          offset = 0,
-          chorddiagOutput("keggChord", width = "500px", height = "500px"),
-          width = 4
-        )
-      )
+    shiny::tagList(shiny::tags$head(
+        shiny::tags$link(rel = "stylesheet", type = "text/css", href = "busystyle.css"),
+        shiny::tags$script(type = "text/javascript", src = "busy.js")
+    )),
+    div(
+        class = "busy",
+        p("Loading data and computing enrichment, please be patient..."),
+        img(src = "dna.gif")
     ),
-    tabItem(
-      # second tab GO tab
-      tabName = "go",
-      h3("Biological proccess"),
-      fluidRow(column(
-        # table BP
-        width = 8,
-        offset = 2,
-        dataTableOutput("tableBP")
-      )),
-      hr(),
-      fluidRow(
-        #plot BP
-        class = "text-center",
-        column(
-          align = "center",
-          offset = 2,
-          plotlyOutput("plotBP"),
-          width = 8
-        )
-      ),
-      h3("Molecular Functions"),
-      fluidRow(column(
-        # table MF
-        width = 8,
-        offset = 2,
-        dataTableOutput("tableMF")
-      )),
-      hr(),
-      fluidRow(
-        # plot MF
-        class = "text-center",
-        column(
-          align = "center",
-          offset = 2,
-          plotlyOutput("plotMF"),
-          width = 8
-        )
-      ),
-      h3("Cellular components"),
-      fluidRow(column(
-        # table CC
-        width = 8,
-        offset = 2,
-        dataTableOutput("tableCC")
-      )),
-      hr(),
-      fluidRow(
-        # plot CC
-        class = "text-center",
-        column(
-          align = "center",
-          offset = 2,
-          plotlyOutput("plotCC"),
-          width = 8
-        )
-      ) #fin fluidrow
-    ) # tab GO
-  ) # fin tab items
+    tabItems(
+        # preview tab
+        tabItem(tabName = "preview",
+                h3("Sample info (colData)"),
+                fluidRow(
+                    column(
+                        width = 8,
+                        offset = 2,
+                        dataTableOutput("samples")
+                    )
+                ),
+                hr(),
+                h3("DE results"),
+                fluidRow(
+                    column(
+                        width = 8,
+                        offset = 2,
+                        dataTableOutput("preview")
+                    )
+                ),
+                hr(),
+                fluidRow(column(
+                        width = 8,
+                        offset = 2,
+                        plotOutput("pca", height = "600px")
+                    ))
+                ),
+        # kegg tab content
+        tabItem(
+            tabName = "kegg",
+            fluidRow(column(
+                width = 8,
+                offset = 2,
+                dataTableOutput("table")
+            )),
+            hr(),
+            fluidRow(
+                class = "text-center",
+                column(
+                    align = "center",
+                    offset = 2,
+                    plotlyOutput("keggPlot"),
+                    width = 5
+                ),
+                column(
+                    align = "center",
+                    offset = 0,
+                    chorddiagOutput("keggChord", width = "500px", height = "500px"),
+                    width = 4
+                )
+            )
+        ),
+        tabItem(
+            # GO tab GO tab
+            tabName = "go",
+            h3("Biological proccess"),
+            fluidRow(column(
+                # table BP
+                width = 8,
+                offset = 2,
+                dataTableOutput("tableBP")
+            )),
+            hr(),
+            fluidRow(
+                #plot BP
+                class = "text-center",
+                column(
+                    align = "center",
+                    offset = 2,
+                    plotlyOutput("plotBP"),
+                    width = 8
+                )
+            ),
+            h3("Molecular Functions"),
+            fluidRow(column(
+                # table MF
+                width = 8,
+                offset = 2,
+                dataTableOutput("tableMF")
+            )),
+            hr(),
+            fluidRow(
+                # plot MF
+                class = "text-center",
+                column(
+                    align = "center",
+                    offset = 2,
+                    plotlyOutput("plotMF"),
+                    width = 8
+                )
+            ),
+            h3("Cellular components"),
+            fluidRow(column(
+                # table CC
+                width = 8,
+                offset = 2,
+                dataTableOutput("tableCC")
+            )),
+            hr(),
+            fluidRow(
+                # plot CC
+                class = "text-center",
+                column(
+                    align = "center",
+                    offset = 2,
+                    plotlyOutput("plotCC"),
+                    width = 8
+                )
+            ) #fin fluidrow
+        ) # tab GO
+    ) # fin tab items
 )# fin dashboardbody
 
 ########################################## UI #################################################
@@ -154,20 +191,81 @@ server <- function(input, output) {
     kgg <- reactiveValues(k=NULL)
     go <- reactiveValues(g=NULL)
     kggDT <- reactiveValues(predata=NULL)
+    datos <- reactiveValues(dds=NULL)
     
     observeEvent(input$deseqFile, {
-        #source("aux.R", local = FALSE)
-        data$genes <- loadGenes(input$deseqFile$datapath)
-        go$g <- customGO(data$genes, species = "Mm")
-        kgg$k <- customKegg(data$genes, species = "Mm", species.KEGG = "mmu")
-        goDT$dt <- go2DT(enrichdf = go$g, data = data$genes )
-        kggDT$predata <- kegg2DT(kgg$k, data$genes)
+        datos$dds <- readRDS(input$deseqFile$datapath)
+        #source("aux.R", local = TRUE)
+        
+        # data$genes <- loadGenes(input$deseqFile$datapath)
+        # go$g <- customGO(data$genes, species = "Mm")
+        # kgg$k <- customKegg(data$genes, species = "Mm", species.KEGG = "mmu")
+        # goDT$dt <- go2DT(enrichdf = go$g, data = data$genes )
+        # kggDT$predata <- kegg2DT(kgg$k, data$genes)
     })
   # generate reactive variable ###################
     rows <- reactive({input$table_rows_selected})
     bprows <- reactive({input$tableBP_rows_selected})
     mfrows <- reactive({input$tableMF_rows_selected})
     ccrows <- reactive({input$tableCC_rows_selected})
+    variables <- reactive({input$variables})
+  # ui selector sample groups ###################
+    output$sampleGroup <- renderUI({
+        validate(need(datos$dds, ""))
+        nvars <- colData(datos$dds) %>% 
+                    as.data.frame() %>% 
+                    select_if(is.factor) %>%
+                    names()
+        selectInput("variables", label="Select condition[s] to plot",
+                    choices = nvars,
+                    multiple = TRUE)
+    })
+  # preview table ###################
+    output$preview <- DT::renderDataTable(server=TRUE,{
+        validate(need(datos$dds, "Load file to render table"))
+        res <- results(datos$dds)
+        res <- as.data.frame(res)
+        datatable( round(res,4), 
+                  filter = list(position="top", clear=FALSE),
+                  options = list(
+                  columnDefs = list(list(orderable = FALSE,
+                                         className = "details-control",
+                                         targets = 1),
+                                    list(className = "dt-right", targets = 1:ncol(res))
+                                    ),
+                  dom = "Bfrtipl",
+                  buttons = c("copy", "csv", "excel", "pdf", "print"),
+                  list(pageLength = 10, white_space = "normal")
+                  )
+                  )
+    })
+  # preview samples ###################
+    output$samples <- DT::renderDataTable(server = TRUE,{
+        validate(need(datos$dds, "Load file to render table"))
+        metadata <- as.data.frame(colData(datos$dds))
+        metadata$sizeFactor <- round(metadata$sizeFactor,4)
+        datatable( metadata, 
+                  filter = list(position="top", clear=FALSE),
+                  options = list(
+                  columnDefs = list(list(orderable = FALSE,
+                                         className = "details-control",
+                                         targets = 1),
+                                    list(className = "dt-right", targets = 1:ncol(metadata))
+                                    ),
+                  dom = "B",
+                  buttons = c("copy", "csv", "excel", "pdf", "print"),
+                  list(pageLength = 10, white_space = "normal")
+                  )
+                  )
+    })
+  # view pca plot data ###################
+    output$pca <- renderPlot( {
+        validate(need(datos$dds, "Load file to render PCA"))
+        validate(need(variables(),"" ) )
+        plotPCA(rlog(datos$dds), intgroup = variables() )+
+            theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
+            theme(text = element_text(size=20))
+    })
   # view kegg table #####################################
     output$table <- DT::renderDataTable(server=TRUE,{
         validate(need(data$genes, "Load file to render table"))

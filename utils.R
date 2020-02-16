@@ -56,6 +56,7 @@ chordPlot <- function(enrichdf, nRows = 10, ont=NULL,  orderby=NULL) {
   )
   return(p)
 }
+
 customCnet2Cytoscape <- function(kgg, category=NULL, nPath=NULL, byDE=FALSE){
     if(! "ggraph" %in% .packages()) require("ggraph")
     if(! "igraph" %in% .packages()) require("igraph")
@@ -153,7 +154,6 @@ customCnetKegg <- function(kgg, category=NULL, nPath=NULL, byDE=FALSE){
         scale_color_gradientn(name = "pval", colors=palette, na.value = "#E5C494")
     return(p)
 }
-
 
 customCnetGo <- function(gos, category=NULL, nTerm=NULL, byDE=FALSE, ont="BP"){
     if(! "ggraph" %in% .packages()) require("ggraph")
@@ -353,10 +353,6 @@ customGO <- function(data, universe = NULL, species = "Hs", prior.prob = NULL,
     resultado <- left_join(resultado, GOlevel, by = c("go_id"="id"))
     return(resultado)
 }
-
-#'
-#' data es un dataframe donde la primera columna son loa symbol y la segunda
-#' los entrez id
 
 customKegg <- function(data, universe = NULL, restrict.universe = FALSE,
     species = "Hs", species.KEGG = "hsa", convert = FALSE, gene.pathway = NULL,
@@ -560,10 +556,8 @@ customKegg <- function(data, universe = NULL, restrict.universe = FALSE,
     return(resultado)
 }
 
-
 # datatable2(x = df, vars = c('genes'), escape = FALSE, opts =
 # list(pageLength=10, white_space='normal') )
-
 datatable2 <- function(x, vars = NULL, opts = NULL, ...) {
     names_x <- names(x)
     if (is.null(vars))
@@ -620,6 +614,7 @@ datatable2 <- function(x, vars = NULL, opts = NULL, ...) {
     paste0(text, "'</table></div>'
       return text;};")
 }
+
 go2DT <- function(enrichdf, data, orderby = NULL, nrows = NULL) {
     if(!is.data.frame(enrichdf) | !is.data.frame(data)){
         stop("enrichdf and data should be data.frame")
@@ -654,11 +649,9 @@ go2DT <- function(enrichdf, data, orderby = NULL, nrows = NULL) {
     return(CAup)
 }
 
-
 # Recupera todos los ids de GO y el nivel al que pertenecen
 # Ejemplo de uso:
 # GOlevel = getGOlevel()
-
 getGOlevel <- function(){
     bp <- "GO:0008150"
     mf <- "GO:0003674"
@@ -760,7 +753,6 @@ kegg2DT <- function(enrichdf, data, orderby = NULL, nrows = NULL) {
     return(CAup)
 }
 
-
 plotGO <- function(enrichdf, nrows = 30, orderby=NULL, ont){
     require(plotly)
     if(!is.data.frame(enrichdf)){
@@ -811,4 +803,56 @@ plotKegg <- function(enrichdf, nrows = 30, orderby=NULL){
 loadGenes <- function(filegenes){
   load(filegenes)
   auxgenes <- genes
+}
+
+plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = FALSE){
+    # calculate the variance for each gene
+    rv <- rowVars(assay(object))
+    
+    # select the ntop genes by variance
+    select <-
+        order(rv, decreasing = TRUE)[seq_len(min(ntop, length(rv)))]
+    
+    # perform a PCA on the data in assay(x) for the selected genes
+    pca <- prcomp(t(assay(object)[select, ]))
+    
+    # the contribution to the total variance for each component
+    percentVar <- pca$sdev ^ 2 / sum(pca$sdev ^ 2)
+    
+    if (!all(intgroup %in% names(colData(object)))) {
+        stop("the argument 'intgroup' should specify columns of colData(dds)")
+    }
+    
+    intgroup.df <-
+        as.data.frame(colData(object)[, intgroup, drop = FALSE])
+    
+    # add the intgroup factors together to create a new grouping factor
+    group <- if (length(intgroup) > 1) {
+        factor(apply(intgroup.df, 1, paste, collapse = ":"))
+    } else {
+        colData(object)[[intgroup]]
+    }
+    
+    # assembly the data for the plot
+    d <-
+        data.frame(
+            PC1 = pca$x[, 1],
+            PC2 = pca$x[, 2],
+            group = group,
+            intgroup.df,
+            name = colnames(object)
+        )
+    
+    if (returnData) {
+        attr(d, "percentVar") <- percentVar[1:2]
+        return(d)
+    }
+    
+    p <-
+        ggplot(data = d, aes_string(x = "PC1", y = "PC2", color = "group")) + geom_point(size =
+                                                                                             3) +
+        xlab(paste0("PC1: ", round(percentVar[1] * 100), "% variance")) +
+        ylab(paste0("PC2: ", round(percentVar[2] * 100), "% variance")) +
+        coord_fixed()
+    return(p)
 }
