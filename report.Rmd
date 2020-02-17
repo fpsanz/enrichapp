@@ -14,7 +14,7 @@ params:
 
 
 ```{r  echo=FALSE, include=FALSE, comment=FALSE}
-setwd("/datos/repos/enrichapp")
+#setwd("/datos/repos/enrichapp")
 library(shinydashboard)
 library(limma)
 library(tidyverse)

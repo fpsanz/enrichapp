@@ -808,31 +808,23 @@ loadGenes <- function(filegenes){
 plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = FALSE){
     # calculate the variance for each gene
     rv <- rowVars(assay(object))
-    
     # select the ntop genes by variance
-    select <-
-        order(rv, decreasing = TRUE)[seq_len(min(ntop, length(rv)))]
-    
+    select <- order(rv, decreasing = TRUE)[seq_len(min(ntop, length(rv)))]
     # perform a PCA on the data in assay(x) for the selected genes
     pca <- prcomp(t(assay(object)[select, ]))
-    
     # the contribution to the total variance for each component
     percentVar <- pca$sdev ^ 2 / sum(pca$sdev ^ 2)
-    
     if (!all(intgroup %in% names(colData(object)))) {
         stop("the argument 'intgroup' should specify columns of colData(dds)")
     }
-    
     intgroup.df <-
         as.data.frame(colData(object)[, intgroup, drop = FALSE])
-    
     # add the intgroup factors together to create a new grouping factor
     group <- if (length(intgroup) > 1) {
         factor(apply(intgroup.df, 1, paste, collapse = ":"))
     } else {
         colData(object)[[intgroup]]
     }
-    
     # assembly the data for the plot
     d <-
         data.frame(
@@ -842,17 +834,95 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = FALS
             intgroup.df,
             name = colnames(object)
         )
-    
     if (returnData) {
         attr(d, "percentVar") <- percentVar[1:2]
         return(d)
     }
-    
-    p <-
-        ggplot(data = d, aes_string(x = "PC1", y = "PC2", color = "group")) + geom_point(size =
-                                                                                             3) +
-        xlab(paste0("PC1: ", round(percentVar[1] * 100), "% variance")) +
-        ylab(paste0("PC2: ", round(percentVar[2] * 100), "% variance")) +
-        coord_fixed()
+    p <- ggplot(data = d,
+                aes_string(x = "PC1", y = "PC2", color = "group")) + geom_point(size = 3) +
+      xlab(paste0("PC1: ", round(percentVar[1] * 100), "% variance")) +
+      ylab(paste0("PC2: ", round(percentVar[2] * 100), "% variance")) +
+      coord_fixed() +
+      theme(text = element_text(size=20))
     return(p)
 }
+
+getSigUpregulated <- function(dds){
+  rk <- as.data.frame(results(dds))
+  rk <- rk[rk$log2FoldChange >0 & rk$pvalue<=0.05,]
+  rk <- rk[ order(rk$pvalue, decreasing = TRUE), ]
+  annot <- NULL
+  annot$ENSEMBL <- rownames(rk)
+  annot$SYMBOL <-  mapIds(EnsDb.Mmusculus.v79, keys=rownames(rk), column="SYMBOL",keytype="GENEID")
+  annot$SYMBOL1 <- mapIds(org.Mm.eg.db, keys = rownames(rk),
+                          column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first') 
+  annot <- as.data.frame(annot)
+  consensus <- data.frame('Symbol'= ifelse(!is.na(annot$SYMBOL), as.vector(annot$SYMBOL),
+                                          ifelse(!is.na(annot$SYMBOL1),as.vector(annot$SYMBOL1),
+                                                 as.vector(annot$ENSEMBL))), stringsAsFactors = F)
+  annot$consensus <- consensus$Symbol
+  entrez1 <- mapIds(org.Mm.eg.db, keys = annot$consensus, column = "ENTREZID", keytype = "SYMBOL")
+  entrez2 <- mapIds(org.Mm.eg.db, keys = as.character(annot$ENSEMBL),
+                    column = "ENTREZID", keytype = "ENSEMBL")
+  annot$entrez1 <- entrez1
+  annot$entrez2 <- entrez2
+  ENTREZID <- ifelse(!is.na(annot$entrez1), annot$entrez1, annot$entrez2)
+  annot$ENTREZID <- ENTREZID
+  return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
+}
+
+getSigDownregulated <- function(dds){
+  rk <- as.data.frame(results(dds))
+  rk <- rk[rk$log2FoldChange <0 & rk$pvalue<=0.05,]
+  rk <- rk[ order(rk$pvalue, decreasing = TRUE), ]
+  annot <- NULL
+  annot$ENSEMBL <- rownames(rk)
+  annot$SYMBOL <-  mapIds(EnsDb.Mmusculus.v79, keys=rownames(rk), column="SYMBOL",keytype="GENEID")
+  annot$SYMBOL1 <- mapIds(org.Mm.eg.db, keys = rownames(rk),
+                          column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first') 
+  annot <- as.data.frame(annot)
+  consensus <- data.frame('Symbol'= ifelse(!is.na(annot$SYMBOL), as.vector(annot$SYMBOL),
+                                           ifelse(!is.na(annot$SYMBOL1),as.vector(annot$SYMBOL1),
+                                                  as.vector(annot$ENSEMBL))), stringsAsFactors = F)
+  annot$consensus <- consensus$Symbol
+  entrez1 <- mapIds(org.Mm.eg.db, keys = annot$consensus, column = "ENTREZID", keytype = "SYMBOL")
+  entrez2 <- mapIds(org.Mm.eg.db, keys = as.character(annot$ENSEMBL),
+                    column = "ENTREZID", keytype = "ENSEMBL")
+  annot$entrez1 <- entrez1
+  annot$entrez2 <- entrez2
+  ENTREZID <- ifelse(!is.na(annot$entrez1), annot$entrez1, annot$entrez2)
+  annot$ENTREZID <- ENTREZID
+  return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
+}
+
+
+dotPlotkegg <- function(data, n = 20){
+  data$ratio <- data$DE/data$N
+  data <- data[order(data$ratio, decreasing = F), ]
+  data <- data[seq_len(n),]
+  data$Pathway <- factor(data$Pathway, levels = data$Pathway)
+  p <- ggplot(data, aes(y=Pathway, x=ratio, color=P.DE))+
+    geom_point(aes(size=DE), stat="identity")+
+    theme_bw()+
+    labs(x = "ratio (DE/N)") +
+    scale_color_continuous(low = "red", high = "blue", 
+                           guide = guide_colorbar(reverse = TRUE))+
+    theme(text = element_text(size=20))
+  return(p)
+}
+
+dotPlotGO <- function(data, n = 20){
+  data$ratio <- data$DE/data$N
+  data <- data[order(data$ratio, decreasing = F), ]
+  data <- data[seq_len(n),]
+  data$Term <- factor(data$Term, levels = data$Term)
+  p <- ggplot(data, aes(y=Term, x=ratio, color=P.DE))+
+    geom_point(aes(size=DE), stat="identity")+
+    theme_bw()+
+    labs(x = "ratio (DE/N)") +
+    scale_color_continuous(low = "red", high = "blue", 
+                           guide = guide_colorbar(reverse = TRUE))+
+    theme(text = element_text(size=20))
+  return(p)
+}
+
