@@ -895,7 +895,6 @@ getSigDownregulated <- function(dds){
   return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
 }
 
-
 dotPlotkegg <- function(data, n = 20){
   data$ratio <- data$DE/data$N
   data <- data[order(data$ratio, decreasing = F), ]

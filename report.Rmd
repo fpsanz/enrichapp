@@ -6,85 +6,223 @@ output:
   rmdformats::readthedown:
     highlight: kate
 params:
-  n: NA
-  bp: NA
-  cc: NA
-  mf: NA
+  nr: NA
+  bpnr: NA
+  ccnr: NA
+  mfnr: NA
+  nrdown: NA
+  bpnrdown: NA
+  mfnrdown: NA
+  ccnrdown: NA
+  variablepca: NA
+  tempdir: NA
+editor_options: 
+  chunk_output_type: console
 ---
 
 
-```{r  echo=FALSE, include=FALSE, comment=FALSE}
-#setwd("/datos/repos/enrichapp")
+```{r setup, echo=FALSE, include=FALSE, comment=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+setwd(params$tempdir)
 library(shinydashboard)
 library(limma)
 library(tidyverse)
 library(DT)
 library(purrr)
 library(plotly)
+library(DESeq2)
 source("utils.R")
-load("genes.Rdata")
-kgg <- readRDS("kgg.Rds")
-gos <- readRDS("gos.Rds")
+genesUp <- readRDS( "genesUp.Rds")
+genesDown <- readRDS("genesDown.Rds")
+kggUp <- readRDS( "kggUp.Rds")
+kggDTup <- readRDS( "kggDTup.Rds")
+goUp <- readRDS( "goUp.Rds")
+goDTup <- readRDS( "goDTup.Rds")
+kggDown <- readRDS( "kggDown.Rds")
+kggDTdown <- readRDS( "kggDTdown.Rds")
+goDown <- readRDS( "goDown.Rds")
+goDTdown <- readRDS( "goDTdown.Rds")
+dds <- readRDS("deseq.Rds")
 ```
 
-## Kegg enrichment 
+# Data preview
+
+## Metata experiment
+
+```{r}
+metadata <- as.data.frame(colData(dds))
+metadata$sizeFactor <- round(metadata$sizeFactor,4)
+datatable( metadata, filter = list(position="top", clear=FALSE),
+           options = list(
+               columnDefs = list(list(orderable = FALSE,
+               className = "details-control",
+               targets = 1),
+               list(className = "dt-right", targets = 1:ncol(metadata))),
+               dom = "Bfrtipl",
+               buttons = c("copy", "csv", "excel", "pdf", "print"),
+               list(pageLength = 10, white_space = "normal")))
+```
+
+## PCA gene expresión
+
+```{r}
+plotPCA(rlog(dds), intgroup = params$variablepca )+
+            theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
+            theme(text = element_text(size=12))
+```
+
+## Gene Expression results
+
+```{r}
+res <- results(dds)
+res <- as.data.frame(res)
+datatable(
+    round(res, 4),
+    filter = list(position = "top", clear = FALSE),
+    options = list(
+        columnDefs = list(
+            list(
+                orderable = FALSE,
+                className = "details-control",
+                targets = 1
+            ),
+            list(className = "dt-right", targets = 1:ncol(res))
+        ),
+        dom = "Bfrtipl",
+        buttons = c("copy", "csv", "excel", "pdf", "print"),
+        list(pageLength = 10, white_space = "normal")
+    )
+)
+```
+
+# Kegg pathways enrichment
+
+## Kegg enrichment Upregulated
 
 ```{r echo=FALSE}
-predata <- kegg2DT(kgg[params$n, ], genes, nrows = length(params$n))
-        datatable2(
-            predata,
+predata <- kegg2DT(kggUp[params$nr, ], genes, nrows = length(params$nr))
+datatable2( predata,
             vars = c("genes"),
             escape = FALSE,
             opts = list(pageLength = 10, white_space = "normal"))
 ```
 
+### Kegg barplot
+
 ```{r  echo=FALSE}
-plotKegg(enrichdf = kgg[params$n,], nrows = length(params$n) ) 
+plotKegg(enrichdf = kggUp[params$nr,], nrows = length(params$nr) ) 
 ```
+
+### Kegg chordplot
 
 ```{r echo=FALSE, warning=FALSE}
-chordPlot(kgg[params$n, ], nRows = length(params$n), orderby = "P.DE")
+chordPlot(kggUp[params$nr, ], nRows = length(params$nr), orderby = "P.DE")
 ```
 
-## GO Biological proccess enrichment
+### Kegg dotplot
+
+```{r}
+dotPlotkegg(kggUp[params$nr,], n = length(params$nr))+
+        theme(text = element_text(size=10))
+```
+
+## Kegg enrichment Downregulated
+
+```{r echo=FALSE}
+predata <- kegg2DT(kggDown[params$nrdown, ], genes, nrows = length(params$nrdown))
+datatable2( predata,
+            vars = c("genes"),
+            escape = FALSE,
+            opts = list(pageLength = 10, white_space = "normal"))
+```
+
+### Kegg barplot
+
+```{r  echo=FALSE}
+plotKegg(enrichdf = kggDown[params$nrdown,], nrows = length(params$nrdown) ) 
+```
+
+### Kegg chordplot
+
+```{r echo=FALSE, warning=FALSE}
+chordPlot(kggDown[params$nrdown, ], nRows = length(params$nrdown), orderby = "P.DE")
+```
+
+### Kegg dotplot
+
+```{r}
+dotPlotkegg(kggDown[params$nrdown,], n = length(params$nrdown))+
+        theme(text = element_text(size=10))
+```
+
+# Gene Ontology enrichment
+
+## GO Biological Proccess Upregulated
 
 ```{r echo=FALSE, eval=TRUE}
-gosbp <- gos[gos$Ont=="BP",]
-goDT <- go2DT(enrichdf = gosbp[params$bp, ], data = genes, nrows = length(params$bp))
+gosbp <- goUp[goUp$Ont=="BP",]
+goDT <- go2DT(enrichdf = gosbp[params$bpnr, ], data = genes, nrows = length(params$bpnr))
 datatable2(goDT, vars = c("genes"),
            escape = FALSE,
            opts = list(pageLength = 10, white_space = "normal"))
 ```
 
+### BP barplot 
+
 ```{r echo=FALSE, eval=TRUE}
-plotGO(enrichdf = gosbp[params$bp,], nrows = length(params$bp), ont="BP")
+plotGO(enrichdf = gosbp[params$bpnr,], nrows = length(params$bpnr), ont="BP")
 ```
 
+### BP dotplot
 
-## GO Molecular function enrichment
+```{r}
+dotPlotGO(gosbp[params$bpnr,], n = length(params$bpnr))+
+        theme(text = element_text(size=10))
+```
+
+## GO Molecular Function Upregulated
 
 ```{r echo=FALSE, eval=TRUE}
-gosmf <- gos[gos$Ont=="MF",]
-goDT <- go2DT(enrichdf = gosmf[params$mf, ], data = genes, nrows = length(params$mf))
+gosbp <- goUp[goUp$Ont=="MF",]
+goDT <- go2DT(enrichdf = gosbp[params$mfnr, ], data = genes, nrows = length(params$mfnr))
 datatable2(goDT, vars = c("genes"),
            escape = FALSE,
            opts = list(pageLength = 10, white_space = "normal"))
 ```
 
+### MF barplot
+
 ```{r echo=FALSE, eval=TRUE}
-plotGO(enrichdf = gosmf[params$mf,], nrows = length(params$mf), ont="MF")
+plotGO(enrichdf = gosbp[params$mfnr,], nrows = length(params$mfnr), ont="MF")
 ```
 
-## GO Cellular component enrichment 
+### MF dotplot
+
+```{r}
+dotPlotGO(gosbp[params$mfnr,], n = length(params$mfnr))+
+        theme(text = element_text(size=10))
+```
+
+## GO Cellular Component Upregulated
 
 ```{r echo=FALSE, eval=TRUE}
-goscc <- gos[gos$Ont=="CC",]
-goDT <- go2DT(enrichdf = goscc[params$cc, ], data = genes, nrows = length(params$cc))
+gosbp <- goUp[goUp$Ont=="CC",]
+goDT <- go2DT(enrichdf = gosbp[params$ccnr, ], data = genes, nrows = length(params$ccnr))
 datatable2(goDT, vars = c("genes"),
            escape = FALSE,
            opts = list(pageLength = 10, white_space = "normal"))
 ```
 
+### CC barplot
+
 ```{r echo=FALSE, eval=TRUE}
-plotGO(enrichdf = goscc[params$cc,], nrows = length(params$cc), ont="CC")
+plotGO(enrichdf = gosbp[params$ccnr,], nrows = length(params$ccnr), ont="CC")
 ```
+
+### CC dotplot
+
+```{r}
+dotPlotGO(gosbp[params$ccnr,], n = length(params$ccnr))+
+        theme(text = element_text(size=10))
+```
+

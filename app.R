@@ -12,19 +12,10 @@ library(DESeq2)
 source("utils.R")
 options(shiny.maxRequestSize = 3000*1024^2)
 
-#genes <- read.csv("genes.csv", header = T, stringsAsFactors = F, row.names = 1)
-#genes <- genes %>% filter(!is.na(ENTREZID)& !ENTREZID=="NULL" )
-#save(genes, file = "genes.Rdata")
-# load("genes.Rdata")
-# gos <- readRDS("gos.Rds")
-# goDT <- go2DT(enrichdf = gos, data = genes)
-#kgg <- customKegg(genes, species = "Mm", species.KEGG = "mmu")
-#saveRDS(kgg, "kgg.Rds")
-#kgg <- readRDS("kgg.Rds")
-#gos <- customGO(genes,species = "Mm")
-#saveRDS(gos,"gos.Rds")
+#TODO hacer heatmap y netplot sólo cuando se seleccionen filas
+#TODO ver hacer GSEA
 
-  
+
  ### HEADER ############
 header <- dashboardHeader(title = "RNAseq viewer and report App", 
                   titleWidth = 300, 
@@ -321,18 +312,27 @@ server <- function(input, output) {
     
     observeEvent(input$deseqFile, {
         datos$dds <- readRDS(input$deseqFile$datapath)
+        saveRDS(datos$dds, "deseq.Rds")
         data$genesUp <- getSigUpregulated(datos$dds)
         data$genesDown <- getSigDownregulated(datos$dds)
-        
+        saveRDS(data$genesUp, "genesUp.Rds")
+        saveRDS(data$genesDown, "genesDown.Rds")
         kgg$up <- customKegg(data$genesUp, species = "Mm", species.KEGG = "mmu")
+        saveRDS(kgg$up, "kggUp.Rds")
         kggDT$up <- kegg2DT(kgg$up, data$genesUp)
+        saveRDS(kggDT$up, "kggDTup.Rds")
         go$up <- customGO(data$genesUp, species = "Mm")
+        saveRDS(go$up, "goUp.Rds")
         goDT$up <- go2DT(enrichdf = go$up, data = data$genesUp )
-        
+        saveRDS(goDT$up, "goDTup.Rds")
         kgg$down <- customKegg(data$genesDown, species = "Mm", species.KEGG = "mmu")
+        saveRDS(kgg$down, "kggDown.Rds")
         kggDT$down <- kegg2DT(kgg$down, data$genesDown)
+        saveRDS(kggDT$down, "kggDTdown.Rds")
         go$down <- customGO(data$genesDown, species = "Mm")
+        saveRDS(go$down, "goDown.Rds")
         goDT$down <- go2DT(enrichdf = go$down, data = data$genesDown )
+        saveRDS(goDT$down, "goDTdown.Rds")
         
     })
   # generate reactive variable ###################
@@ -438,7 +438,8 @@ server <- function(input, output) {
       kgg <- kgg$up
       nr <- rows()
       if(is.null(nr)){nr <- c(1:20)}
-      dotPlotkegg(kgg[nr,], n = length(nr))
+      dotPlotkegg(kgg[nr,], n = length(nr))+
+          theme(panel.background = element_rect(fill = "transparent"))
     })
 # KEGG table down #####################################
     output$tableDown <- DT::renderDataTable(server=TRUE,{
@@ -658,13 +659,31 @@ server <- function(input, output) {
         content = function(file) {
             tempReport <- file.path(tempdir(), "report.Rmd")
             file.copy("report.Rmd", tempReport, overwrite = TRUE)
-            file.copy("utils.R", tempReport, overwrite = TRUE)
-            saveRDS(data, paste0(tempReport,data))
-            saveRDS(datos, paste0(tempReport,datos))
-            saveRDS(kgg, paste0(tempReport,kgg))
-            saveRDS(go, paste0(tempReport,go))
-            saveRDS(goDT, paste0(tempReport,goDT))
-            saveRDS(kggDT, paste0(tempReport,kggDT))
+            file.copy("utils.R", file.path(tempdir(),"utils.R"), overwrite = TRUE)
+            file.copy("genesUp.Rds", file.path(tempdir(), "genesUp.Rds"), overwrite = TRUE)
+            file.remove("genesUp.Rds")
+            file.copy("genesDown.Rds", file.path(tempdir(), "genesDown.Rds"), overwrite = TRUE)
+            file.remove("genesDown.Rds")
+            file.copy("kggUp.Rds", file.path(tempdir(), "kggUp.Rds"), overwrite = TRUE)
+            file.remove("kggUp.Rds")
+            file.copy("kggDown.Rds", file.path(tempdir(), "kggDown.Rds"), overwrite = TRUE)
+            file.remove("kggDown.Rds")
+            file.copy("goDown.Rds", file.path(tempdir(), "goDown.Rds"), overwrite = TRUE)
+            file.remove("goDown.Rds")
+            file.copy("goUp.Rds", file.path(tempdir(), "goUp.Rds"), overwrite = TRUE)
+            file.remove("goUp.Rds")
+            file.copy("kggDTup.Rds", file.path(tempdir(), "kggDTup.Rds"), overwrite = TRUE)
+            file.remove("kggDTup.Rds")
+            file.copy("kggDTdown.Rds", file.path(tempdir(), "kggDTdown.Rds"), overwrite = TRUE)
+            file.remove("kggDTdown.Rds")
+            file.copy("goDTup.Rds", file.path(tempdir(), "goDTup.Rds"), overwrite = TRUE)
+            file.remove("goDTup.Rds")
+            file.copy("goDTdown.Rds", file.path(tempdir(), "goDTdown.Rds"), overwrite = TRUE)
+            file.remove("goDTdown.Rds")
+            file.copy("deseq.Rds", file.path(tempdir(), "deseq.Rds"), overwrite = TRUE)
+            file.remove("deseq.Rds")
+            
+
             nr <- rows()
             nrdown <- rowsdown()
             bpnr <- bprows()
@@ -678,12 +697,14 @@ server <- function(input, output) {
             if(is.null(ccnr)){ccnr <- c(1:10)}
             if(is.null(mfnr)){mfnr <- c(1:10)}
             if(is.null(bpnr)){bpnr <- c(1:10)}
-            if(is.null(nrdown)){nr <- c(1:10)}
-            if(is.null(ccnrdown)){ccnr <- c(1:10)}
-            if(is.null(mfnrdown)){mfnr <- c(1:10)}
-            if(is.null(bpnrdown)){bpnr <- c(1:10)}
+            if(is.null(nrdown)){nrdown <- c(1:10)}
+            if(is.null(ccnrdown)){ccnrdown <- c(1:10)}
+            if(is.null(mfnrdown)){mfnrdown <- c(1:10)}
+            if(is.null(bpnrdown)){bpnrdown <- c(1:10)}
             if(is.null(variablepca)){variablepca=NULL}
-            params <- list()
+            params <- list(nr=nr, nrdown=nrdown, bpnr=bpnr, bpnrdown=bpnrdown,
+                           mfnr=mfnr, mfnrdown=mfnrdown, ccnr=ccnr, ccnrdown=ccnrdown,
+                           variablepca=variablepca, tempdir =tempdir() )
             rmarkdown::render(
                 tempReport,
                 output_file = file,
