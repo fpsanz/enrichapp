@@ -104,11 +104,12 @@ customCnet2Cytoscape <- function(kgg, category=NULL, nPath=NULL, byDE=FALSE){
     createNetworkFromIgraph(g, "customIgraph")
 }
 
-customCnetKegg <- function(kgg, category=NULL, nPath=NULL, byDE=FALSE){
+customCnetKegg <- function(kgg, category=NULL, nPath=NULL, byDE=FALSE, nr){
     if(! "ggraph" %in% .packages()) require("ggraph")
     if(! "igraph" %in% .packages()) require("igraph")
     if(! "dplyr" %in% .packages()) require("dplyr")
     if(! "tidyr" %in% .packages()) require("tidyr")
+    kgg <- kgg[nr,]
     color_palette <- function(colors) colorRampPalette(colors)(n = 299)
     if(byDE){
         kgg <- kgg %>% arrange(-DE)
@@ -925,3 +926,25 @@ dotPlotGO <- function(data, n = 20){
   return(p)
 }
 
+heatmapKegg <- function(kdt, nr){
+  kdt <- kdt[nr, ]
+  colourCount <- length(unique(kdt$DE)) # number of levels
+  getPalette <- colorRampPalette(RColorBrewer::brewer.pal(9, "YlOrRd"))
+  kdt %>% dplyr::select(Pathway, genes,DE) %>% 
+    separate_rows(genes) %>%
+    mutate(Pathway = fct_inorder(Pathway)) %>% 
+    mutate(Pathway = fct_rev(Pathway)) %>% 
+    mutate(genes = fct_infreq(genes)) %>% 
+    mutate(DE = factor(DE)) %>% 
+    ggplot(aes_(~genes, ~Pathway)) + 
+    geom_tile(aes_(fill = ~DE), color = 'black', size =0.2) +
+    xlab(NULL) + ylab(NULL) +
+    theme_minimal() +
+    theme(panel.grid.major = element_line(colour = "gray88", size = 0.8),
+          axis.text.x=element_text(angle = 90, hjust = 1, vjust = 0.5, size=5))+
+    # scale_fill_continuous(low="blue", high="red", name = "N")
+    # scale_fill_brewer(palette = "YlOrRd")
+    scale_fill_manual(values = getPalette(colourCount))+
+    theme(text = element_text(size=16, angle=45))
+  
+}

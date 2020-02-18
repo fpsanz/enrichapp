@@ -123,8 +123,28 @@ body <- dashboardBody(
                         plotOutput("keggDotUp"),
                         width = 8
                       )
+                    ),
+                    hr(),
+                    fluidRow(
+                      class="text-center",
+                      column(
+                        align = "center",
+                        offset= 2,
+                        plotOutput("heatmapKeggUp"),
+                        width = 8
+                      )
+                    ),
+                    hr(),
+                    fluidRow(
+                      class="text-center",
+                      column(
+                        align = "center",
+                        offset= 2,
+                        plotOutput("cnetKeggUp"),
+                        width = 8
+                      )
                     )
-                  ),
+                  ), # fin tabpanel upregulated
                   tabPanel(
                     "Downregulated",
                     fluidRow(column(
@@ -156,8 +176,28 @@ body <- dashboardBody(
                         plotOutput("keggDotDown"),
                         width = 8
                       )
+                    ),
+                    hr(),
+                    fluidRow(
+                      class="text-center",
+                      column(
+                        align = "center",
+                        offset= 2,
+                        plotOutput("heatmapKeggDown"),
+                        width = 8
+                      )
+                    ),
+                    hr(),
+                    fluidRow(
+                      class="text-center",
+                      column(
+                        align = "center",
+                        offset= 2,
+                        plotOutput("cnetKeggDown"),
+                        width = 8
+                      )
                     )
-                  )
+                  ) # fin tabpanel
                 )),
         tabItem( tabName = "go", # GO tab GO tab
           tabsetPanel(
@@ -401,7 +441,7 @@ server <- function(input, output) {
         plotPCA(rlog(datos$dds), intgroup = variables() )+
             theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
             theme(text = element_text(size=20))
-    })
+        })
 # KEGG table up#####################################
     output$table <- DT::renderDataTable(server=TRUE,{
         validate(need(kgg$up, "Load file to render table"))
@@ -415,7 +455,7 @@ server <- function(input, output) {
             filter = list(position="top", clear=FALSE),
             escape = FALSE,
             opts = list(pageLength = 10, white_space = "normal"))
-    }) 
+        }) 
 # KEGG barplot up################
     output$keggPlot <- renderPlotly ({
         validate(need(kgg$up, "Load file to render BarPlot"))
@@ -432,15 +472,29 @@ server <- function(input, output) {
         if(is.null(nr)){nr <- c(1:10)}
         chordPlot(kgg[nr, ], nRows = length(nr), orderby = "P.DE")
     })
-# KEEGG dotplot UP ################### 
+# KEGG dotplot UP ################### 
     output$keggDotUp <- renderPlot({
       validate(need(kgg$up, "Load file to render dotPlot"))
       kgg <- kgg$up
       nr <- rows()
       if(is.null(nr)){nr <- c(1:20)}
-      dotPlotkegg(kgg[nr,], n = length(nr))+
-          theme(panel.background = element_rect(fill = "transparent"))
+      dotPlotkegg(kgg[nr,], n = length(nr))
     })
+# KEGG heatmap Up #################
+    output$heatmapKeggUp <- renderPlot({
+      validate(need(rows(), ""))
+      validate(need(kggDT$up, ""))
+      nr <- rows()
+      heatmapKegg(kggDT$up, nr)
+    })
+# KEGG cnet Up #################
+    output$cnetKeggUp <- renderPlot({
+      validate(need(rows(), ""))
+      validate(need(kgg$up, ""))
+      nr <- rows()
+      customCnetKegg(kgg$up, nr)
+    })
+    
 # KEGG table down #####################################
     output$tableDown <- DT::renderDataTable(server=TRUE,{
       validate(need(kgg$down, "Load file to render table"))
@@ -478,6 +532,20 @@ server <- function(input, output) {
       nrdown <- rowsdown()
       if(is.null(nrdown)){nrdown <- c(1:20)}
       dotPlotkegg(kgg[nrdown,], n = length(nrdown))
+    })
+# KEGG heatmap Down #################
+    output$heatmapKeggDown <- renderPlot({
+      validate(need(rowsdown(), ""))
+      validate(need(kggDT$down, ""))
+      nrdown <- rowsdown()
+      heatmapKegg(kggDT$down, nrdown)
+    })
+# KEGG cnet Up #################
+    output$cnetKeggDown <- renderPlot({
+      validate(need(rows(), ""))
+      validate(need(kgg$up, ""))
+      nrdown <- rowsdown()
+      customCnetKegg(kgg$down, nrdown)
     })
 # GO table BP UP#####################
     output$tableBP <- DT::renderDataTable(server=TRUE,{
