@@ -948,3 +948,16 @@ heatmapKegg <- function(kdt, nr){
     theme(text = element_text(size=16, angle=45))
   
 }
+
+
+#TODO terminar esta funcion. Utilizar fgsea
+gseaKegg <- function(){
+GeneID.PathID <- getGeneKEGGLinks("mmu", convert = FALSE)
+PathName <- getKEGGPathwayNames("mmu",remove.qualifier = TRUE)
+
+kk <- GeneID.PathID %>% group_by(PathwayID) %>% summarise(paste(GeneID, collapse = ",")) 
+
+kkk <- split(kk$`paste(GeneID, collapse = ",")`, seq(nrow(kk)))
+names(kkk) <- kk$PathwayID
+kkkk <- lapply(kkk, function(x){unlist(strsplit(x,","))})
+}

@@ -9,6 +9,7 @@ library(purrr)
 library(plotly)
 library(chorddiag)
 library(DESeq2)
+library(fgsea)
 source("utils.R")
 options(shiny.maxRequestSize = 3000*1024^2)
 
