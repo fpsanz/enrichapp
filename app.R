@@ -767,7 +767,7 @@ server <- function(input, output) {
       validate(need(gsea$gsea, "Load file to render table"))
       gseanr <- gsearow()
       if(is.null(gseanr)){gseanr <- c(1)}
-      enrichplot::gseaplot2(gsea$gsea, geneSetID = gseanr, pvalue_table = TRUE, ES_geom = "line")
+        enrichplot::gseaplot2(gsea$gsea, geneSetID = gseanr, pvalue_table = TRUE, ES_geom = "line")
     })
     
 # generate report #############################
