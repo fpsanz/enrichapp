@@ -27,7 +27,7 @@ sidebar <- dashboardSidebar(sidebarMenu(
                             menuItem(
                             fileInput("deseqFile",
                                       "Choose RDS with Deseq object",
-                                      placeholder = "RDS file"))),
+                                      placeholder = "RDS DEseq"))),
                             sidebarMenu(
                               menuItem("Preview dataset",
                                        tabName = "preview",
@@ -48,7 +48,9 @@ sidebar <- dashboardSidebar(sidebarMenu(
                                 tabName = "gsea",
                                 icon = icon("chart-line")
                               ),
+                              sidebarMenu(
                               menuItem(
+                              textInput("author", value="your name...", label = h4("Author report name") )),
                               downloadButton("report", "Generate report")
                               )
                             ))
@@ -769,7 +771,8 @@ server <- function(input, output) {
       if(is.null(gseanr)){gseanr <- c(1)}
         enrichplot::gseaplot2(gsea$gsea, geneSetID = gseanr, pvalue_table = TRUE, ES_geom = "line")
     })
-    
+# author name ######################
+    author <- reactive({input$author})
 # generate report #############################
     output$report <- downloadHandler(
         # For PDF output, change this to "report.pdf"
@@ -826,7 +829,7 @@ server <- function(input, output) {
             if(is.null(variablepca)){variablepca=NULL}
             params <- list(nr=nr, nrdown=nrdown, bpnr=bpnr, bpnrdown=bpnrdown,
                            mfnr=mfnr, mfnrdown=mfnrdown, ccnr=ccnr, ccnrdown=ccnrdown,
-                           variablepca=variablepca, tempdir =tempdir(), gseanr=gseanr )
+                           variablepca=variablepca, tempdir =tempdir(), gseanr=gseanr, author=author() )
             rmarkdown::render(
                 tempReport,
                 output_file = file,

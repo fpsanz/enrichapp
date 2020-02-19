@@ -1,7 +1,7 @@
 ---
 title: "RNAseq viewer report"
-author: "Miriam RIQUELME"
-date: 2020
+author: "`r params$author`"
+date: "`r format(Sys.time(), '%d %B %Y')`"
 output:
   rmdformats::readthedown:
     highlight: kate
@@ -17,6 +17,7 @@ params:
   variablepca: NA
   tempdir: NA
   gseanr: NA
+  author: NA
 ---
 
 
