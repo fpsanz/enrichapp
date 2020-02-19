@@ -852,23 +852,7 @@ getSigUpregulated <- function(dds){
   rk <- as.data.frame(results(dds))
   rk <- rk[rk$log2FoldChange >0 & rk$pvalue<=0.05,]
   rk <- rk[ order(rk$pvalue, decreasing = TRUE), ]
-  annot <- NULL
-  annot$ENSEMBL <- rownames(rk)
-  annot$SYMBOL <-  mapIds(EnsDb.Mmusculus.v79, keys=rownames(rk), column="SYMBOL",keytype="GENEID")
-  annot$SYMBOL1 <- mapIds(org.Mm.eg.db, keys = rownames(rk),
-                          column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first') 
-  annot <- as.data.frame(annot)
-  consensus <- data.frame('Symbol'= ifelse(!is.na(annot$SYMBOL), as.vector(annot$SYMBOL),
-                                          ifelse(!is.na(annot$SYMBOL1),as.vector(annot$SYMBOL1),
-                                                 as.vector(annot$ENSEMBL))), stringsAsFactors = F)
-  annot$consensus <- consensus$Symbol
-  entrez1 <- mapIds(org.Mm.eg.db, keys = annot$consensus, column = "ENTREZID", keytype = "SYMBOL")
-  entrez2 <- mapIds(org.Mm.eg.db, keys = as.character(annot$ENSEMBL),
-                    column = "ENTREZID", keytype = "ENSEMBL")
-  annot$entrez1 <- entrez1
-  annot$entrez2 <- entrez2
-  ENTREZID <- ifelse(!is.na(annot$entrez1), annot$entrez1, annot$entrez2)
-  annot$ENTREZID <- ENTREZID
+  annot <- geneIdConverter(rownames(rk))
   return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
 }
 
@@ -876,10 +860,17 @@ getSigDownregulated <- function(dds){
   rk <- as.data.frame(results(dds))
   rk <- rk[rk$log2FoldChange <0 & rk$pvalue<=0.05,]
   rk <- rk[ order(rk$pvalue, decreasing = TRUE), ]
+  annot <- geneIdConverter(rownames(rk))
+  return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
+}
+
+geneIdConverter <- function(genes){ # genes = vector of ensembl gene ids (sólo para Mm por ahora)
+  require("EnsDb.Mmusculus.v79")
+  require("org.Mm.eg.db")
   annot <- NULL
-  annot$ENSEMBL <- rownames(rk)
-  annot$SYMBOL <-  mapIds(EnsDb.Mmusculus.v79, keys=rownames(rk), column="SYMBOL",keytype="GENEID")
-  annot$SYMBOL1 <- mapIds(org.Mm.eg.db, keys = rownames(rk),
+  annot$ENSEMBL <- genes
+  annot$SYMBOL <-  mapIds(EnsDb.Mmusculus.v79, keys=genes, column="SYMBOL",keytype="GENEID")
+  annot$SYMBOL1 <- mapIds(org.Mm.eg.db, keys = genes,
                           column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first') 
   annot <- as.data.frame(annot)
   consensus <- data.frame('Symbol'= ifelse(!is.na(annot$SYMBOL), as.vector(annot$SYMBOL),
@@ -893,7 +884,7 @@ getSigDownregulated <- function(dds){
   annot$entrez2 <- entrez2
   ENTREZID <- ifelse(!is.na(annot$entrez1), annot$entrez1, annot$entrez2)
   annot$ENTREZID <- ENTREZID
-  return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
+  return(annot)
 }
 
 dotPlotkegg <- function(data, n = 20){
@@ -951,13 +942,32 @@ heatmapKegg <- function(kdt, nr){
 
 
 #TODO terminar esta funcion. Utilizar fgsea
-gseaKegg <- function(){
-GeneID.PathID <- getGeneKEGGLinks("mmu", convert = FALSE)
-PathName <- getKEGGPathwayNames("mmu",remove.qualifier = TRUE)
+buildKeggDataset <- function(specie="mmu"){
+  GeneID.PathID <- getGeneKEGGLinks(specie, convert = FALSE)
+  PathName <- getKEGGPathwayNames(specie,remove.qualifier = TRUE)
+  PathName$Id <- paste(PathName$PathwayID,PathName$Description,sep="_")
+  dataSet <- left_join(GeneID.PathID, PathName, by = c("PathwayID"="PathwayID"))
+  dataSet$Id <- gsub("path:","",dataSet$Id)
+  dataSet <- dataSet[,c(4,1)]
+  saveRDS(dataSet,"keggDataGSEA.Rds")
+  }
 
-kk <- GeneID.PathID %>% group_by(PathwayID) %>% summarise(paste(GeneID, collapse = ",")) 
-
-kkk <- split(kk$`paste(GeneID, collapse = ",")`, seq(nrow(kk)))
-names(kkk) <- kk$PathwayID
-kkkk <- lapply(kkk, function(x){unlist(strsplit(x,","))})
+gseaKegg <- function(dds){
+  pathwayDataSet <- readRDS("keggDataGSEA.Rds")
+  res <- as.data.frame(results(dds))
+  res <- res[order(res$log2FoldChange, decreasing = TRUE), ]
+  res$ENSEMBL <- rownames(res)
+  geneRank <- geneIdConverter( res$ENSEMBL)
+  resRank <- left_join(res, geneRank, by=c("ENSEMBL"="ENSEMBL"))
+  resRank <- resRank[!is.na(resRank$ENTREZID), c("ENTREZID","log2FoldChange") ]
+  vectRank <- resRank$log2FoldChange
+  attr(vectRank, "names") <- as.character(resRank$ENTREZID)
+  mygsea <- clusterProfiler::GSEA(vectRank, 
+                                  TERM2GENE = pathwayDataSet, 
+                                  by="fgsea", pvalueCutoff = 0.1)
+  mygsea <- DOSE::setReadable(mygsea, "org.Mm.eg.db", "ENTREZID")
+  return(mygsea)
 }
+
+#enrichplot::gseaplot2(mygsea_s, geneSetID = 1:2, pvalue_table = TRUE, ES_geom = "line")
+

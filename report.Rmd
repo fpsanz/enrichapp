@@ -1,7 +1,7 @@
 ---
 title: "RNAseq viewer report"
-author: "Fps"
-#date: `r format(Sys.time(), "%d %b %Y")`
+author: "Miriam RIQUELME"
+date: 2020
 output:
   rmdformats::readthedown:
     highlight: kate
@@ -16,6 +16,7 @@ params:
   ccnrdown: NA
   variablepca: NA
   tempdir: NA
+  gseanr: NA
 ---
 
 
@@ -32,7 +33,7 @@ cat("
 ```
 
 ```{r setup, echo=FALSE, include=FALSE, comment=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, fig.width = 12)
 setwd(params$tempdir)
 library(shinydashboard)
 library(limma)
@@ -53,6 +54,7 @@ kggDTdown <- readRDS( "kggDTdown.Rds")
 goDown <- readRDS( "goDown.Rds")
 goDTdown <- readRDS( "goDTdown.Rds")
 dds <- readRDS("deseq.Rds")
+gsea <- readRDS("gsea.Rds")
 ```
 
 # Data preview
@@ -334,5 +336,35 @@ dotPlotGO(gosbp[params$ccnrdown,], n = length(params$ccnrdown))+
         theme(text = element_text(size=10))
 ```
 
+# Gene Set Enrichment Analysis
 
+## GSEA results
+
+```{r}
+table <- gsea@result[gsea@result$p.adjust <= 0.05 , 2:9] %>%
+  mutate_at(vars(3:7), ~ round(., 3))
+DT::datatable(
+  table,
+  rownames = FALSE,
+  filter = list(position = "top", clear = FALSE),
+  options = list(
+    columnDefs = list(
+      list(
+        orderable = FALSE,
+        className = "details-control",
+        targets = 1
+      )
+    ),
+    dom = "Bfrtipl",
+    buttons = c("copy", "csv", "excel", "pdf", "print"),
+    list(pageLength = 10, white_space = "normal")
+  )
+)
+```
+
+## GSEA plot
+
+```{r fig.width=12}
+enrichplot::gseaplot2(gsea, geneSetID = params$gseanr, pvalue_table = TRUE, ES_geom = "line")
+```
 

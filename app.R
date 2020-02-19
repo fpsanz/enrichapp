@@ -330,7 +330,21 @@ body <- dashboardBody(
                      offset= 2,
                      plotOutput("CCDotDown"),
                      width = 8)) #fin fluidrow
-        ))) # tab GO
+        ))), # tab GO
+        tabItem(tabName = "gsea",
+                h3("Gene Set Enrichment Analysis"),
+                fluidRow(column(
+                  width = 8,
+                  offset = 2,
+                  dataTableOutput("gseaTable")
+                )),
+                hr(),
+                fluidRow(column(
+                  width = 8,
+                  offset = 2,
+                  plotOutput("gseaPlot")
+                ))
+                ) #fin tab GSEA
     ) # fin tab items
 )# fin dashboardbody
 
@@ -350,6 +364,7 @@ server <- function(input, output) {
     go <- reactiveValues()
     kggDT <- reactiveValues()
     datos <- reactiveValues(dds=NULL)
+    gsea <- reactiveValues()
     
     observeEvent(input$deseqFile, {
         datos$dds <- readRDS(input$deseqFile$datapath)
@@ -386,6 +401,7 @@ server <- function(input, output) {
     mfrowsdown <- reactive({input$tableMFdown_rows_selected})
     ccrowsdown <- reactive({input$tableCCdown_rows_selected})
     variables <- reactive({input$variables})
+    gsearow <- reactive({input$gseaTable_rows_selected})
   # ui selector sample groups ###################
     output$sampleGroup <- renderUI({
         validate(need(datos$dds, ""))
@@ -571,6 +587,7 @@ server <- function(input, output) {
     output$BPDotUp <- renderPlot({
       validate(need(go$up, "Load file to render dotPlot"))
       gos <- go$up
+      
       bpnr <- bprows()
       if(is.null(bpnr)){bpnr <- c(1:20)}
       gosBP <- gos[gos$Ont=="BP",]
@@ -587,6 +604,9 @@ server <- function(input, output) {
                              ajax = list(serverSide = TRUE, processing = TRUE))
       )
     })
+    
+    
+    
 # GO plots MF UP #####################
     output$plotMF <- renderPlotly({
         validate(need(go$up, "Load file to render plot"))
@@ -720,7 +740,36 @@ server <- function(input, output) {
       gosCC <- gos[gos$Ont=="CC",]
       dotPlotGO(gosCC[ccnrdown,], n = length(ccnrdown))
     })
-        
+# GSEA table ##########################
+    output$gseaTable <- renderDataTable({
+      validate(need(datos$dds, "Load file to render table"))
+      gsea$gsea <- gseaKegg(datos$dds)
+      mygsea <- gsea$gsea
+      saveRDS(mygsea, "gsea.Rds")
+      table <- mygsea@result[mygsea@result$p.adjust<=0.05 ,2:9] %>% 
+        mutate_at(vars(3:7), ~round(., 3))
+      DT::datatable( table,
+                 rownames=FALSE,
+                 filter = list(position="top", clear=FALSE),
+                 options = list(
+                   columnDefs = list(list(orderable = FALSE,
+                                          className = "details-control",
+                                          targets = 1)
+                   ),
+                   dom = "Bfrtipl",
+                   buttons = c("copy", "csv", "excel", "pdf", "print"),
+                   list(pageLength = 10, white_space = "normal")
+                 )
+      )
+    })
+# GSEA plot ##########################
+    output$gseaPlot <- renderPlot({
+      validate(need(gsea$gsea, "Load file to render table"))
+      gseanr <- gsearow()
+      if(is.null(gseanr)){gseanr <- c(1)}
+      enrichplot::gseaplot2(gsea$gsea, geneSetID = gseanr, pvalue_table = TRUE, ES_geom = "line")
+    })
+    
 # generate report #############################
     output$report <- downloadHandler(
         # For PDF output, change this to "report.pdf"
@@ -751,6 +800,8 @@ server <- function(input, output) {
             file.remove("goDTdown.Rds")
             file.copy("deseq.Rds", file.path(tempdir(), "deseq.Rds"), overwrite = TRUE)
             file.remove("deseq.Rds")
+            file.copy("gsea.Rds", file.path(tempdir(), "gsea.Rds"), overwrite = TRUE)
+            file.remove("gsea.Rds")
             
 
             nr <- rows()
@@ -762,6 +813,8 @@ server <- function(input, output) {
             mfnrdown <- mfrowsdown()
             ccnrdown <- ccrowsdown()
             variablepca <- variables()
+            gseanr <- gsearow()
+            if(is.null(gseanr)){gseanr <- c(1)}
             if(is.null(nr)){nr <- c(1:10)}
             if(is.null(ccnr)){ccnr <- c(1:10)}
             if(is.null(mfnr)){mfnr <- c(1:10)}
@@ -773,7 +826,7 @@ server <- function(input, output) {
             if(is.null(variablepca)){variablepca=NULL}
             params <- list(nr=nr, nrdown=nrdown, bpnr=bpnr, bpnrdown=bpnrdown,
                            mfnr=mfnr, mfnrdown=mfnrdown, ccnr=ccnr, ccnrdown=ccnrdown,
-                           variablepca=variablepca, tempdir =tempdir() )
+                           variablepca=variablepca, tempdir =tempdir(), gseanr=gseanr )
             rmarkdown::render(
                 tempReport,
                 output_file = file,
