@@ -43,19 +43,21 @@ library(DT)
 library(purrr)
 library(plotly)
 library(DESeq2)
+library("ggraph")
+library("igraph")
 source("utils.R")
-genesUp <- readRDS( "genesUp.Rds")
-genesDown <- readRDS("genesDown.Rds")
-kggUp <- readRDS( "kggUp.Rds")
-kggDTup <- readRDS( "kggDTup.Rds")
-goUp <- readRDS( "goUp.Rds")
-goDTup <- readRDS( "goDTup.Rds")
-kggDown <- readRDS( "kggDown.Rds")
-kggDTdown <- readRDS( "kggDTdown.Rds")
-goDown <- readRDS( "goDown.Rds")
-goDTdown <- readRDS( "goDTdown.Rds")
-dds <- readRDS("deseq.Rds")
-gsea <- readRDS("gsea.Rds")
+genesUp <- readRDS( "tmpResources/genesUp.Rds")
+genesDown <- readRDS("tmpResources/genesDown.Rds")
+kggUp <- readRDS( "tmpResources/kggUp.Rds")
+kggDTup <- readRDS( "tmpResources/kggDTup.Rds")
+goUp <- readRDS( "tmpResources/goUp.Rds")
+goDTup <- readRDS( "tmpResources/goDTup.Rds")
+kggDown <- readRDS( "tmpResources/kggDown.Rds")
+kggDTdown <- readRDS( "tmpResources/kggDTdown.Rds")
+goDown <- readRDS( "tmpResources/goDown.Rds")
+goDTdown <- readRDS( "tmpResources/goDTdown.Rds")
+dds <- readRDS("tmpResources/deseq.Rds")
+gsea <- readRDS("tmpResources/gsea.Rds")
 ```
 
 # Data preview
@@ -110,7 +112,7 @@ datatable(
 
 # Kegg pathways enrichment
 
-## Kegg enrichment Upregulated
+## Kegg enrichment Upregulated {.tabset .tabset-fade .tabset-pills}
 
 ```{r echo=FALSE}
 predata <- kegg2DT(kggUp[params$nr, ], genesUp, nrows = length(params$nr))
@@ -152,7 +154,7 @@ customCnetKegg(kggUp, params$nr)
 ```
 
 
-## Kegg enrichment Downregulated
+## Kegg enrichment Downregulated {.tabset .tabset-fade .tabset-pills}
 
 ```{r echo=FALSE}
 predata <- kegg2DT(kggDown[params$nrdown, ], genesDown, nrows = length(params$nrdown))
@@ -195,7 +197,7 @@ customCnetKegg(kggDown, params$nrdown)
 
 # Gene Ontology enrichment
 
-## GO Biological Proccess Upregulated
+## GO Biological Proccess Upregulated {.tabset .tabset-fade .tabset-pills}
 
 ```{r echo=FALSE, eval=TRUE}
 gosbp <- goUp[goUp$Ont=="BP",]
@@ -218,7 +220,7 @@ dotPlotGO(gosbp[params$bpnr,], n = length(params$bpnr))+
         theme(text = element_text(size=10))
 ```
 
-## GO Molecular Function Upregulated
+## GO Molecular Function Upregulated {.tabset .tabset-fade .tabset-pills}
 
 ```{r echo=FALSE, eval=TRUE}
 gosbp <- goUp[goUp$Ont=="MF",]
@@ -241,7 +243,7 @@ dotPlotGO(gosbp[params$mfnr,], n = length(params$mfnr))+
         theme(text = element_text(size=10))
 ```
 
-## GO Cellular Component Upregulated
+## GO Cellular Component Upregulated {.tabset .tabset-fade .tabset-pills}
 
 ```{r echo=FALSE, eval=TRUE}
 gosbp <- goUp[goUp$Ont=="CC",]
@@ -265,7 +267,7 @@ dotPlotGO(gosbp[params$ccnr,], n = length(params$ccnr))+
 ```
 
 
-## GO Biological Proccess Downregulated
+## GO Biological Proccess Downregulated {.tabset .tabset-fade .tabset-pills}
 
 ```{r echo=FALSE, eval=TRUE}
 gosbp <- goDown[goDown$Ont=="BP",]
@@ -289,7 +291,7 @@ dotPlotGO(gosbp[params$bpnrdown,], n = length(params$bpnrdown))+
         theme(text = element_text(size=10))
 ```
 
-## GO Molecular Function Upregulated
+## GO Molecular Function Upregulated {.tabset .tabset-fade .tabset-pills}
 
 ```{r echo=FALSE, eval=TRUE}
 gosbp <- goDown[goDown$Ont=="MF",]
@@ -313,7 +315,7 @@ dotPlotGO(gosbp[params$mfnrdown,], n = length(params$mfnrdown))+
         theme(text = element_text(size=10))
 ```
 
-## GO Cellular Component Upregulated
+## GO Cellular Component Upregulated {.tabset .tabset-fade .tabset-pills}
 
 ```{r echo=FALSE, eval=TRUE}
 gosbp <- goDown[goDown$Ont=="CC",]

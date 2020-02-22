@@ -13,10 +13,6 @@ library(fgsea)
 source("utils.R")
 options(shiny.maxRequestSize = 3000*1024^2)
 
-#TODO hacer heatmap y netplot sólo cuando se seleccionen filas
-#TODO ver hacer GSEA
-
-
  ### HEADER ############
 header <- dashboardHeader(title = "RNAseq viewer and report App", 
                   titleWidth = 300, 
@@ -370,27 +366,27 @@ server <- function(input, output) {
     
     observeEvent(input$deseqFile, {
         datos$dds <- readRDS(input$deseqFile$datapath)
-        saveRDS(datos$dds, "deseq.Rds")
+        saveRDS(datos$dds, "tmpResources/deseq.Rds")
         data$genesUp <- getSigUpregulated(datos$dds)
         data$genesDown <- getSigDownregulated(datos$dds)
-        saveRDS(data$genesUp, "genesUp.Rds")
-        saveRDS(data$genesDown, "genesDown.Rds")
+        saveRDS(data$genesUp, "tmpResources/genesUp.Rds")
+        saveRDS(data$genesDown, "tmpResources/genesDown.Rds")
         kgg$up <- customKegg(data$genesUp, species = "Mm", species.KEGG = "mmu")
-        saveRDS(kgg$up, "kggUp.Rds")
+        saveRDS(kgg$up, "tmpResources/kggUp.Rds")
         kggDT$up <- kegg2DT(kgg$up, data$genesUp)
-        saveRDS(kggDT$up, "kggDTup.Rds")
+        saveRDS(kggDT$up, "tmpResources/kggDTup.Rds")
         go$up <- customGO(data$genesUp, species = "Mm")
-        saveRDS(go$up, "goUp.Rds")
+        saveRDS(go$up, "tmpResources/goUp.Rds")
         goDT$up <- go2DT(enrichdf = go$up, data = data$genesUp )
-        saveRDS(goDT$up, "goDTup.Rds")
+        saveRDS(goDT$up, "tmpResources/goDTup.Rds")
         kgg$down <- customKegg(data$genesDown, species = "Mm", species.KEGG = "mmu")
-        saveRDS(kgg$down, "kggDown.Rds")
+        saveRDS(kgg$down, "tmpResources/kggDown.Rds")
         kggDT$down <- kegg2DT(kgg$down, data$genesDown)
-        saveRDS(kggDT$down, "kggDTdown.Rds")
+        saveRDS(kggDT$down, "tmpResources/kggDTdown.Rds")
         go$down <- customGO(data$genesDown, species = "Mm")
-        saveRDS(go$down, "goDown.Rds")
+        saveRDS(go$down, "tmpResources/goDown.Rds")
         goDT$down <- go2DT(enrichdf = go$down, data = data$genesDown )
-        saveRDS(goDT$down, "goDTdown.Rds")
+        saveRDS(goDT$down, "tmpResources/goDTdown.Rds")
         
     })
   # generate reactive variable ###################
@@ -518,9 +514,7 @@ server <- function(input, output) {
     output$tableDown <- DT::renderDataTable(server=TRUE,{
       validate(need(kgg$down, "Load file to render table"))
       kgg <- kgg$down
-      #genes <- data$genes
       predata <- kggDT$down
-      #predata <- kegg2DT(kgg, genes)
       datatable2(
         predata,
         vars = c("genes"),
@@ -747,7 +741,7 @@ server <- function(input, output) {
       validate(need(datos$dds, "Load file to render table"))
       gsea$gsea <- gseaKegg(datos$dds)
       mygsea <- gsea$gsea
-      saveRDS(mygsea, "gsea.Rds")
+      saveRDS(mygsea, "tmpResources/gsea.Rds")
       table <- mygsea@result[mygsea@result$p.adjust<=0.05 ,2:9] %>% 
         mutate_at(vars(3:7), ~round(., 3))
       DT::datatable( table,
@@ -781,30 +775,33 @@ server <- function(input, output) {
             tempReport <- file.path(tempdir(), "report.Rmd")
             file.copy("report.Rmd", tempReport, overwrite = TRUE)
             file.copy("utils.R", file.path(tempdir(),"utils.R"), overwrite = TRUE)
-            file.copy("genesUp.Rds", file.path(tempdir(), "genesUp.Rds"), overwrite = TRUE)
-            file.remove("genesUp.Rds")
-            file.copy("genesDown.Rds", file.path(tempdir(), "genesDown.Rds"), overwrite = TRUE)
-            file.remove("genesDown.Rds")
-            file.copy("kggUp.Rds", file.path(tempdir(), "kggUp.Rds"), overwrite = TRUE)
-            file.remove("kggUp.Rds")
-            file.copy("kggDown.Rds", file.path(tempdir(), "kggDown.Rds"), overwrite = TRUE)
-            file.remove("kggDown.Rds")
-            file.copy("goDown.Rds", file.path(tempdir(), "goDown.Rds"), overwrite = TRUE)
-            file.remove("goDown.Rds")
-            file.copy("goUp.Rds", file.path(tempdir(), "goUp.Rds"), overwrite = TRUE)
-            file.remove("goUp.Rds")
-            file.copy("kggDTup.Rds", file.path(tempdir(), "kggDTup.Rds"), overwrite = TRUE)
-            file.remove("kggDTup.Rds")
-            file.copy("kggDTdown.Rds", file.path(tempdir(), "kggDTdown.Rds"), overwrite = TRUE)
-            file.remove("kggDTdown.Rds")
-            file.copy("goDTup.Rds", file.path(tempdir(), "goDTup.Rds"), overwrite = TRUE)
-            file.remove("goDTup.Rds")
-            file.copy("goDTdown.Rds", file.path(tempdir(), "goDTdown.Rds"), overwrite = TRUE)
-            file.remove("goDTdown.Rds")
-            file.copy("deseq.Rds", file.path(tempdir(), "deseq.Rds"), overwrite = TRUE)
-            file.remove("deseq.Rds")
-            file.copy("gsea.Rds", file.path(tempdir(), "gsea.Rds"), overwrite = TRUE)
-            file.remove("gsea.Rds")
+            file.copy("tmpResources/", tempdir(), overwrite = TRUE, recursive = TRUE)
+            do.call(file.remove, list(list.files("tmpResources/", full.names = TRUE)))
+            
+            # file.copy("genesUp.Rds", file.path(tempdir(), "genesUp.Rds"), overwrite = TRUE)
+            # file.remove("genesUp.Rds")
+            # file.copy("genesDown.Rds", file.path(tempdir(), "genesDown.Rds"), overwrite = TRUE)
+            # file.remove("genesDown.Rds")
+            # file.copy("kggUp.Rds", file.path(tempdir(), "kggUp.Rds"), overwrite = TRUE)
+            # file.remove("kggUp.Rds")
+            # file.copy("kggDown.Rds", file.path(tempdir(), "kggDown.Rds"), overwrite = TRUE)
+            # file.remove("kggDown.Rds")
+            # file.copy("goDown.Rds", file.path(tempdir(), "goDown.Rds"), overwrite = TRUE)
+            # file.remove("goDown.Rds")
+            # file.copy("goUp.Rds", file.path(tempdir(), "goUp.Rds"), overwrite = TRUE)
+            # file.remove("goUp.Rds")
+            # file.copy("kggDTup.Rds", file.path(tempdir(), "kggDTup.Rds"), overwrite = TRUE)
+            # file.remove("kggDTup.Rds")
+            # file.copy("kggDTdown.Rds", file.path(tempdir(), "kggDTdown.Rds"), overwrite = TRUE)
+            # file.remove("kggDTdown.Rds")
+            # file.copy("goDTup.Rds", file.path(tempdir(), "goDTup.Rds"), overwrite = TRUE)
+            # file.remove("goDTup.Rds")
+            # file.copy("goDTdown.Rds", file.path(tempdir(), "goDTdown.Rds"), overwrite = TRUE)
+            # file.remove("goDTdown.Rds")
+            # file.copy("deseq.Rds", file.path(tempdir(), "deseq.Rds"), overwrite = TRUE)
+            # file.remove("deseq.Rds")
+            # file.copy("gsea.Rds", file.path(tempdir(), "gsea.Rds"), overwrite = TRUE)
+            # file.remove("gsea.Rds")
             
 
             nr <- rows()

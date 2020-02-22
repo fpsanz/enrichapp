@@ -1,0 +1,373 @@
+---
+title: "RNAseq viewer report"
+author: "`r params$author`"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+params:
+  nr: NA
+  bpnr: NA
+  ccnr: NA
+  mfnr: NA
+  nrdown: NA
+  bpnrdown: NA
+  mfnrdown: NA
+  ccnrdown: NA
+  variablepca: NA
+  tempdir: NA
+  gseanr: NA
+  author: NA
+---
+
+
+```{r results="asis", echo=FALSE}
+cat("
+<style>
+#content {
+  max-width: 1080px;
+  margin-left: 300px;
+  background: #edf0f2;
+}
+</style>
+")
+```
+
+```{r setup, echo=FALSE, include=FALSE, comment=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, fig.width = 12)
+setwd(params$tempdir)
+library(shinydashboard)
+library(limma)
+library(tidyverse)
+library(DT)
+library(purrr)
+library(plotly)
+library(DESeq2)
+library("ggraph")
+library("igraph")
+source("utils.R")
+genesUp <- readRDS( "genesUp.Rds")
+genesDown <- readRDS("genesDown.Rds")
+kggUp <- readRDS( "kggUp.Rds")
+kggDTup <- readRDS( "kggDTup.Rds")
+goUp <- readRDS( "goUp.Rds")
+goDTup <- readRDS( "goDTup.Rds")
+kggDown <- readRDS( "kggDown.Rds")
+kggDTdown <- readRDS( "kggDTdown.Rds")
+goDown <- readRDS( "goDown.Rds")
+goDTdown <- readRDS( "goDTdown.Rds")
+dds <- readRDS("deseq.Rds")
+gsea <- readRDS("gsea.Rds")
+```
+
+# Data preview
+
+## Metata experiment
+
+```{r}
+metadata <- as.data.frame(colData(dds))
+metadata$sizeFactor <- round(metadata$sizeFactor,4)
+datatable( metadata, filter = list(position="top", clear=FALSE),
+           options = list(
+               columnDefs = list(list(orderable = FALSE,
+               className = "details-control",
+               targets = 1),
+               list(className = "dt-right", targets = 1:ncol(metadata))),
+               dom = "Bfrtipl",
+               buttons = c("copy", "csv", "excel", "pdf", "print"),
+               list(pageLength = 10, white_space = "normal")))
+```
+
+## PCA gene expresión
+
+```{r}
+plotPCA(rlog(dds), intgroup = params$variablepca )+
+            theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
+            theme(text = element_text(size=12))
+```
+
+## Gene Expression results
+
+```{r}
+res <- results(dds)
+res <- as.data.frame(res)
+datatable(
+    round(res, 4),
+    filter = list(position = "top", clear = FALSE),
+    options = list(
+        columnDefs = list(
+            list(
+                orderable = FALSE,
+                className = "details-control",
+                targets = 1
+            ),
+            list(className = "dt-right", targets = 1:ncol(res))
+        ),
+        dom = "Bfrtipl",
+        buttons = c("copy", "csv", "excel", "pdf", "print"),
+        list(pageLength = 10, white_space = "normal")
+    )
+)
+```
+
+# Kegg pathways enrichment
+
+## Kegg enrichment Upregulated
+
+```{r echo=FALSE}
+predata <- kegg2DT(kggUp[params$nr, ], genesUp, nrows = length(params$nr))
+datatable2( predata,
+            vars = c("genes"),
+            escape = FALSE,
+            opts = list(pageLength = 10, white_space = "normal"))
+```
+
+### Kegg barplot
+
+```{r  echo=FALSE}
+plotKegg(enrichdf = kggUp[params$nr,], nrows = length(params$nr) ) 
+```
+
+### Kegg chordplot
+
+```{r echo=FALSE, warning=FALSE}
+chordPlot(kggUp[params$nr, ], nRows = length(params$nr), orderby = "P.DE")
+```
+
+### Kegg dotplot
+
+```{r}
+dotPlotkegg(kggUp[params$nr,], n = length(params$nr))+
+        theme(text = element_text(size=10))
+```
+
+### Kegg heatmap
+
+```{r}
+heatmapKegg(kggDTup, params$nr)
+```
+
+### Kegg cnetplot
+
+```{r}
+customCnetKegg(kggUp, params$nr)
+```
+
+
+## Kegg enrichment Downregulated
+
+```{r echo=FALSE}
+predata <- kegg2DT(kggDown[params$nrdown, ], genesDown, nrows = length(params$nrdown))
+datatable2( predata,
+            vars = c("genes"),
+            escape = FALSE,
+            opts = list(pageLength = 10, white_space = "normal"))
+```
+
+### Kegg barplot
+
+```{r  echo=FALSE}
+plotKegg(enrichdf = kggDown[params$nrdown,], nrows = length(params$nrdown) ) 
+```
+
+### Kegg chordplot
+
+```{r echo=FALSE, warning=FALSE}
+chordPlot(kggDown[params$nrdown, ], nRows = length(params$nrdown), orderby = "P.DE")
+```
+
+### Kegg dotplot
+
+```{r}
+dotPlotkegg(kggDown[params$nrdown,], n = length(params$nrdown))+
+        theme(text = element_text(size=10))
+```
+
+### Kegg heatmap
+
+```{r}
+heatmapKegg(kggDTdown, params$nrdown)
+```
+
+### Kegg cnetplot
+
+```{r}
+customCnetKegg(kggDown, params$nrdown)
+```
+
+# Gene Ontology enrichment
+
+## GO Biological Proccess Upregulated
+
+```{r echo=FALSE, eval=TRUE}
+gosbp <- goUp[goUp$Ont=="BP",]
+goDT <- go2DT(enrichdf = gosbp[params$bpnr, ], data = genesUp, nrows = length(params$bpnr))
+datatable2(goDT, vars = c("genes"),
+           escape = FALSE,
+           opts = list(pageLength = 10, white_space = "normal"))
+```
+
+### BP barplot 
+
+```{r echo=FALSE, eval=TRUE}
+plotGO(enrichdf = gosbp[params$bpnr,], nrows = length(params$bpnr), ont="BP")
+```
+
+### BP dotplot
+
+```{r}
+dotPlotGO(gosbp[params$bpnr,], n = length(params$bpnr))+
+        theme(text = element_text(size=10))
+```
+
+## GO Molecular Function Upregulated
+
+```{r echo=FALSE, eval=TRUE}
+gosbp <- goUp[goUp$Ont=="MF",]
+goDT <- go2DT(enrichdf = gosbp[params$mfnr, ], data = genesUp, nrows = length(params$mfnr))
+datatable2(goDT, vars = c("genes"),
+           escape = FALSE,
+           opts = list(pageLength = 10, white_space = "normal"))
+```
+
+### MF barplot
+
+```{r echo=FALSE, eval=TRUE}
+plotGO(enrichdf = gosbp[params$mfnr,], nrows = length(params$mfnr), ont="MF")
+```
+
+### MF dotplot
+
+```{r}
+dotPlotGO(gosbp[params$mfnr,], n = length(params$mfnr))+
+        theme(text = element_text(size=10))
+```
+
+## GO Cellular Component Upregulated
+
+```{r echo=FALSE, eval=TRUE}
+gosbp <- goUp[goUp$Ont=="CC",]
+goDT <- go2DT(enrichdf = gosbp[params$ccnr, ], data = genesUp, nrows = length(params$ccnr))
+datatable2(goDT, vars = c("genes"),
+           escape = FALSE,
+           opts = list(pageLength = 10, white_space = "normal"))
+```
+
+### CC barplot
+
+```{r echo=FALSE, eval=TRUE}
+plotGO(enrichdf = gosbp[params$ccnr,], nrows = length(params$ccnr), ont="CC")
+```
+
+### CC dotplot
+
+```{r}
+dotPlotGO(gosbp[params$ccnr,], n = length(params$ccnr))+
+        theme(text = element_text(size=10))
+```
+
+
+## GO Biological Proccess Downregulated
+
+```{r echo=FALSE, eval=TRUE}
+gosbp <- goDown[goDown$Ont=="BP",]
+goDT <- go2DT(enrichdf = gosbp[params$bpnrdown, ],
+              data = genesDown, nrows = length(params$bpnrdown))
+datatable2(goDT, vars = c("genes"),
+           escape = FALSE,
+           opts = list(pageLength = 10, white_space = "normal"))
+```
+
+### BP barplot 
+
+```{r echo=FALSE, eval=TRUE}
+plotGO(enrichdf = gosbp[params$bpnrdown,], nrows = length(params$bpnrdown), ont="BP")
+```
+
+### BP dotplot
+
+```{r}
+dotPlotGO(gosbp[params$bpnrdown,], n = length(params$bpnrdown))+
+        theme(text = element_text(size=10))
+```
+
+## GO Molecular Function Upregulated
+
+```{r echo=FALSE, eval=TRUE}
+gosbp <- goDown[goDown$Ont=="MF",]
+goDT <- go2DT(enrichdf = gosbp[params$mfnrdown, ],
+              data = genesDown, nrows = length(params$mfnrdown))
+datatable2(goDT, vars = c("genes"),
+           escape = FALSE,
+           opts = list(pageLength = 10, white_space = "normal"))
+```
+
+### MF barplot
+
+```{r echo=FALSE, eval=TRUE}
+plotGO(enrichdf = gosbp[params$mfnrdown,], nrows = length(params$mfnrdown), ont="MF")
+```
+
+### MF dotplot
+
+```{r}
+dotPlotGO(gosbp[params$mfnrdown,], n = length(params$mfnrdown))+
+        theme(text = element_text(size=10))
+```
+
+## GO Cellular Component Upregulated
+
+```{r echo=FALSE, eval=TRUE}
+gosbp <- goDown[goDown$Ont=="CC",]
+goDT <- go2DT(enrichdf = gosbp[params$ccnrdown, ],
+              data = genesDown, nrows = length(params$ccnrdown))
+datatable2(goDT, vars = c("genes"),
+           escape = FALSE,
+           opts = list(pageLength = 10, white_space = "normal"))
+```
+
+### CC barplot
+
+```{r echo=FALSE, eval=TRUE}
+plotGO(enrichdf = gosbp[params$ccnrdown,], nrows = length(params$ccnrdown), ont="CC")
+```
+
+### CC dotplot
+
+```{r}
+dotPlotGO(gosbp[params$ccnrdown,], n = length(params$ccnrdown))+
+        theme(text = element_text(size=10))
+```
+
+# Gene Set Enrichment Analysis
+
+## GSEA results
+
+```{r}
+table <- gsea@result[gsea@result$p.adjust <= 0.05 , 2:9] %>%
+  mutate_at(vars(3:7), ~ round(., 3))
+DT::datatable(
+  table,
+  rownames = FALSE,
+  filter = list(position = "top", clear = FALSE),
+  options = list(
+    columnDefs = list(
+      list(
+        orderable = FALSE,
+        className = "details-control",
+        targets = 1
+      )
+    ),
+    dom = "Bfrtipl",
+    buttons = c("copy", "csv", "excel", "pdf", "print"),
+    list(pageLength = 10, white_space = "normal")
+  )
+)
+```
+
+## GSEA plot
+
+```{r fig.width=12}
+enrichplot::gseaplot2(gsea, geneSetID = params$gseanr, pvalue_table = TRUE, ES_geom = "line")
+```
+

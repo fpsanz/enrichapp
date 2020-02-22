@@ -60,7 +60,6 @@ chordPlot <- function(enrichdf, nRows = 10, ont=NULL,  orderby=NULL) {
 customCnet2Cytoscape <- function(kgg, category=NULL, nPath=NULL, byDE=FALSE){
     if(! "ggraph" %in% .packages()) require("ggraph")
     if(! "igraph" %in% .packages()) require("igraph")
-    if(! "RCy3" %in% .packages()) require("RCy3")
     if(! "dplyr" %in% .packages()) require("dplyr")
     if(! "tidyr" %in% .packages()) require("tidyr")
     ## check if cytoscape is running
@@ -209,7 +208,7 @@ customCnetGo <- function(gos, category=NULL, nTerm=NULL, byDE=FALSE, ont="BP"){
 }
 
 customGO <- function(data, universe = NULL, species = "Hs", prior.prob = NULL,
-    covariate = NULL, plot = FALSE, coef = 1, FDR = 0.05, golevelFile="GOlevel.Rds") {
+    covariate = NULL, plot = FALSE, coef = 1, FDR = 0.05, golevelFile="resources/GOlevel.Rds") {
     if (!is.data.frame(data)) {
         stop("de should be a data.frame with firt column as symbol
         Id and second column as entrez Id.")
@@ -234,8 +233,10 @@ customGO <- function(data, universe = NULL, species = "Hs", prior.prob = NULL,
     if (is.logical(egGO2ALLEGS))
         stop("Can't find gene ontology mappings in package ", orgPkg)
     if (is.null(universe)) {
-        GeneID.PathID <- AnnotationDbi::toTable(egGO2ALLEGS)[, c("gene_id",
-            "go_id", "Ontology")]
+        #GeneID.PathID <- AnnotationDbi::toTable(egGO2ALLEGS)[, c("gene_id",
+         #  "go_id", "Ontology")]
+        file1 <- paste0("resources/",species,"GOlinks.Rds")
+        GeneID.PathID <- readRDS(file1)
         i <- !duplicated(GeneID.PathID[, c("gene_id", "go_id")])
         GeneID.PathID <- GeneID.PathID[i, ]
         universe <- unique(GeneID.PathID[, 1])
@@ -392,7 +393,9 @@ customKegg <- function(data, universe = NULL, restrict.universe = FALSE,
             Rn = "rno", Ss = "ssc", Xl = "xla")
     }
     if (is.null(gene.pathway)) {
-        GeneID.PathID <- getGeneKEGGLinks(species.KEGG, convert = convert)
+        #GeneID.PathID <- getGeneKEGGLinks(species.KEGG, convert = convert)
+         file1 <- paste0("resources/",species.KEGG,"KeggLinks.Rds")
+         GeneID.PathID <- readRDS(file1)
     } else {
         GeneID.PathID <- gene.pathway
         d <- dim(GeneID.PathID)
@@ -412,8 +415,10 @@ customKegg <- function(data, universe = NULL, restrict.universe = FALSE,
         }
     }
     if (is.null(pathway.names)) {
-        PathID.PathName <- getKEGGPathwayNames(species.KEGG,
-            remove.qualifier = TRUE)
+        #PathID.PathName <- getKEGGPathwayNames(species.KEGG,
+         #   remove.qualifier = TRUE)
+        file2 <- paste0("resources/",species.KEGG,"KeggPathwayNames.Rds")
+        PathID.PathName <- readRDS(file2)
     } else {
         PathID.PathName <- pathway.names
         d <- dim(PathID.PathName)
@@ -953,7 +958,7 @@ buildKeggDataset <- function(specie="mmu"){
   }
 
 gseaKegg <- function(dds){
-  pathwayDataSet <- readRDS("keggDataGSEA.Rds")
+  pathwayDataSet <- readRDS("resources/keggDataGSEA.Rds")
   res <- as.data.frame(results(dds))
   res <- res[order(res$log2FoldChange, decreasing = TRUE), ]
   res$ENSEMBL <- rownames(res)
@@ -969,5 +974,34 @@ gseaKegg <- function(dds){
   return(mygsea)
 }
 
-#enrichplot::gseaplot2(mygsea_s, geneSetID = 1:2, pvalue_table = TRUE, ES_geom = "line")
 
+updateDatabases <- function(species){
+    species.KEGG <- NULL
+        if (is.null(species.KEGG)) {
+        species <- match.arg(species, c("Ag", "At", "Bt", "Ce",
+            "Dm", "Dr", "EcK12", "EcSakai", "Gg", "Hs", "Mm",
+            "Mmu", "Pf", "Pt", "Rn", "Ss", "Xl"))
+        species.KEGG <- switch(species, Ag = "aga", At = "ath",
+            Bt = "bta", Ce = "cel", Cf = "cfa", Dm = "dme", Dr = "dre",
+            EcK12 = "eco", EcSakai = "ecs", Gg = "gga", Hs = "hsa",
+            Mm = "mmu", Mmu = "mcc", Pf = "pfa", Pt = "ptr",
+            Rn = "rno", Ss = "ssc", Xl = "xla")
+        }
+    # Kegg
+    GeneID.PathID <- getGeneKEGGLinks(species.KEGG, convert = FALSE)
+    filename <- paste0(species.KEGG,"KeggLinks.Rds")
+    saveRDS(GeneID.PathID, filename)
+    
+    PathID.PathName <- getKEGGPathwayNames(species.KEGG,
+           remove.qualifier = TRUE)
+    filename <- paste0(species.KEGG,"KeggPathwayNames.Rds")
+    saveRDS(PathID.PathName, filename)
+    # GO
+    orgPkg <- paste0("org.", species, ".eg.db")
+    obj <- paste0("org.", species, ".egGO2ALLEGS")
+    egGO2ALLEGS <- tryCatch(getFromNamespace(obj, orgPkg), error = function(e) FALSE)
+    GeneID.PathID <- AnnotationDbi::toTable(egGO2ALLEGS)[, c("gene_id",
+            "go_id", "Ontology")]
+    filename <- paste0(species,"GOlinks.Rds")
+    saveRDS(GeneID.PathID, filename)
+}
