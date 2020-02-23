@@ -1,4 +1,4 @@
-
+# Chorplot ##########################################
 chordPlot <- function(enrichdf, nRows = 10, ont=NULL,  orderby=NULL) {
   if(! "dplyr" %in% .packages()) require("dplyr")
   if(! "tidyr" %in% .packages()) require("tidyr")
@@ -57,6 +57,7 @@ chordPlot <- function(enrichdf, nRows = 10, ont=NULL,  orderby=NULL) {
   return(p)
 }
 
+# plot para exportar cnet a cytoscape ###############
 customCnet2Cytoscape <- function(kgg, category=NULL, nPath=NULL, byDE=FALSE){
     if(! "ggraph" %in% .packages()) require("ggraph")
     if(! "igraph" %in% .packages()) require("igraph")
@@ -103,6 +104,7 @@ customCnet2Cytoscape <- function(kgg, category=NULL, nPath=NULL, byDE=FALSE){
     createNetworkFromIgraph(g, "customIgraph")
 }
 
+# Plot para plotear cnet para kegg ###############
 customCnetKegg <- function(kgg, category=NULL, nPath=NULL, byDE=FALSE, nr){
     if(! "ggraph" %in% .packages()) require("ggraph")
     if(! "igraph" %in% .packages()) require("igraph")
@@ -155,6 +157,7 @@ customCnetKegg <- function(kgg, category=NULL, nPath=NULL, byDE=FALSE, nr){
     return(p)
 }
 
+# Plot para plotear cnet para GO ###############
 customCnetGo <- function(gos, category=NULL, nTerm=NULL, byDE=FALSE, ont="BP"){
     if(! "ggraph" %in% .packages()) require("ggraph")
     if(! "igraph" %in% .packages()) require("igraph")
@@ -207,6 +210,7 @@ customCnetGo <- function(gos, category=NULL, nTerm=NULL, byDE=FALSE, ont="BP"){
     return(p)
 }
 
+# Función para hacer enrich GO ################
 customGO <- function(data, universe = NULL, species = "Hs", prior.prob = NULL,
     covariate = NULL, plot = FALSE, coef = 1, FDR = 0.05, golevelFile="resources/GOlevel.Rds") {
     if (!is.data.frame(data)) {
@@ -356,6 +360,7 @@ customGO <- function(data, universe = NULL, species = "Hs", prior.prob = NULL,
     return(resultado)
 }
 
+# Función para hacer enrich kegg ################
 customKegg <- function(data, universe = NULL, restrict.universe = FALSE,
     species = "Hs", species.KEGG = "hsa", convert = FALSE, gene.pathway = NULL,
     pathway.names = NULL, prior.prob = NULL, covariate = NULL,
@@ -562,8 +567,7 @@ customKegg <- function(data, universe = NULL, restrict.universe = FALSE,
     return(resultado)
 }
 
-# datatable2(x = df, vars = c('genes'), escape = FALSE, opts =
-# list(pageLength=10, white_space='normal') )
+# Función para crear tablas  con desplegable de genes ############
 datatable2 <- function(x, vars = NULL, opts = NULL, ...) {
     names_x <- names(x)
     if (is.null(vars))
@@ -590,6 +594,7 @@ datatable2 <- function(x, vars = NULL, opts = NULL, ...) {
               callback = JS(.callback2(x = x, pos = c(0, pos) ) ) )
 }
 
+# funcion auxiliar de datatable2 ##############################
 .callback2 <- function(x, pos = NULL) {
     part1 <- "table.column(1).nodes().to$().css({cursor: 'pointer'});"
     part2 <- .child_row_table2(x, pos = pos)
@@ -607,6 +612,7 @@ datatable2 <- function(x, vars = NULL, opts = NULL, ...) {
     paste(part1, part2, part3)
 }
 
+# funcion auxiliar de datatable2 ##############################
 .child_row_table2 <- function(x, pos = NULL) {
     names_x <- paste0(names(x), ":")
     text <- "var format = function(d) {
@@ -621,6 +627,7 @@ datatable2 <- function(x, vars = NULL, opts = NULL, ...) {
       return text;};")
 }
 
+# funcion que preparar los datos de enrich go para pasárlos a datatable2 ###############
 go2DT <- function(enrichdf, data, orderby = NULL, nrows = NULL) {
     if(!is.data.frame(enrichdf) | !is.data.frame(data)){
         stop("enrichdf and data should be data.frame")
@@ -658,6 +665,7 @@ go2DT <- function(enrichdf, data, orderby = NULL, nrows = NULL) {
 # Recupera todos los ids de GO y el nivel al que pertenecen
 # Ejemplo de uso:
 # GOlevel = getGOlevel()
+# Guardar lo que genera en resources/GOlevel.Rds #############
 getGOlevel <- function(){
     bp <- "GO:0008150"
     mf <- "GO:0003674"
@@ -723,6 +731,7 @@ getGOlevel <- function(){
     return(GOlevel)
 }
 
+# funcion que preparar los datos de enrich kegg para pasárlos a datatable2 ###############
 kegg2DT <- function(enrichdf, data, orderby = NULL, nrows = NULL) {
     if(!is.data.frame(enrichdf) | !is.data.frame(data)){
         stop("enrichdf and data should be data.frame")
@@ -759,6 +768,7 @@ kegg2DT <- function(enrichdf, data, orderby = NULL, nrows = NULL) {
     return(CAup)
 }
 
+# Plot barrar de GO ####################
 plotGO <- function(enrichdf, nrows = 30, orderby=NULL, ont){
     require(plotly)
     if(!is.data.frame(enrichdf)){
@@ -786,6 +796,7 @@ plotGO <- function(enrichdf, nrows = 30, orderby=NULL, ont){
     return(p)
 }
 
+# Plot barrar de Kegg #############################333
 plotKegg <- function(enrichdf, nrows = 30, orderby=NULL){
     require(plotly)
     if(!is.data.frame(enrichdf)){
@@ -806,11 +817,13 @@ plotKegg <- function(enrichdf, nrows = 30, orderby=NULL){
     return(p)
 }
 
+# Función sin uso actualmente -creo- #############
 loadGenes <- function(filegenes){
   load(filegenes)
   auxgenes <- genes
 }
 
+# PCA de un objeto DESeq #####################3
 plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = FALSE){
     # calculate the variance for each gene
     rv <- rowVars(assay(object))
@@ -853,6 +866,8 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = FALS
     return(p)
 }
 
+# Función para recuperar los genes up de un objeto DEseq #############
+# actualmente para p-val <= 0.05 fijo.
 getSigUpregulated <- function(dds){
   rk <- as.data.frame(results(dds))
   rk <- rk[rk$log2FoldChange >0 & rk$pvalue<=0.05,]
@@ -861,6 +876,8 @@ getSigUpregulated <- function(dds){
   return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
 }
 
+# Función para recuperar los genes down de un objeto DEseq #############
+# actualmente para p-val <= 0.05 fijo.
 getSigDownregulated <- function(dds){
   rk <- as.data.frame(results(dds))
   rk <- rk[rk$log2FoldChange <0 & rk$pvalue<=0.05,]
@@ -869,6 +886,8 @@ getSigDownregulated <- function(dds){
   return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
 }
 
+# Convertidor de nombres de genes ###################
+# Se le pasa un vector de ensembl y devuelve un df con varios nombres
 geneIdConverter <- function(genes){ # genes = vector of ensembl gene ids (sólo para Mm por ahora)
   require("EnsDb.Mmusculus.v79")
   require("org.Mm.eg.db")
@@ -892,6 +911,7 @@ geneIdConverter <- function(genes){ # genes = vector of ensembl gene ids (sólo 
   return(annot)
 }
 
+# Dotplot de objeto enrich kegg ##########################
 dotPlotkegg <- function(data, n = 20){
   data$ratio <- data$DE/data$N
   data <- data[order(data$ratio, decreasing = F), ]
@@ -907,6 +927,7 @@ dotPlotkegg <- function(data, n = 20){
   return(p)
 }
 
+# Dotplot de objeto enrich GO ##########################
 dotPlotGO <- function(data, n = 20){
   data$ratio <- data$DE/data$N
   data <- data[order(data$ratio, decreasing = F), ]
@@ -922,6 +943,7 @@ dotPlotGO <- function(data, n = 20){
   return(p)
 }
 
+# Heatmap de objeto enrich kegg ##########################
 heatmapKegg <- function(kdt, nr){
   kdt <- kdt[nr, ]
   colourCount <- length(unique(kdt$DE)) # number of levels
@@ -945,8 +967,7 @@ heatmapKegg <- function(kdt, nr){
   
 }
 
-
-#TODO terminar esta funcion. Utilizar fgsea
+# Función para crear dataset para hacer GESA pathway ##################
 buildKeggDataset <- function(specie="mmu"){
   GeneID.PathID <- getGeneKEGGLinks(specie, convert = FALSE)
   PathName <- getKEGGPathwayNames(specie,remove.qualifier = TRUE)
@@ -954,9 +975,10 @@ buildKeggDataset <- function(specie="mmu"){
   dataSet <- left_join(GeneID.PathID, PathName, by = c("PathwayID"="PathwayID"))
   dataSet$Id <- gsub("path:","",dataSet$Id)
   dataSet <- dataSet[,c(4,1)]
-  saveRDS(dataSet,"keggDataGSEA.Rds")
+  saveRDS(dataSet,"resources/keggDataGSEA.Rds")
   }
 
+# Función para hacer GSEA pathway #################################
 gseaKegg <- function(dds){
   pathwayDataSet <- readRDS("resources/keggDataGSEA.Rds")
   res <- as.data.frame(results(dds))
@@ -974,7 +996,8 @@ gseaKegg <- function(dds){
   return(mygsea)
 }
 
-
+# Función para actualizar las bases de datos de kegg y GO #############
+# esto mejora la velocidad de los enrich en unos 10 segs
 updateDatabases <- function(species){
     species.KEGG <- NULL
         if (is.null(species.KEGG)) {
