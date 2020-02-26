@@ -36,38 +36,72 @@ cat("
 ```{r setup, echo=FALSE, include=FALSE, comment=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, fig.width = 12)
 setwd(params$tempdir)
-library(shinydashboard)
-library(limma)
-library(tidyverse)
-library(DT)
-library(purrr)
-library(plotly)
-library(DESeq2)
+library("shinydashboard")
+library("limma")
+library("tidyverse")
+library("DT")
+library("purrr")
+library("plotly")
+library("DESeq2")
 library("ggraph")
 library("igraph")
 source("utils.R")
-genesUp <- readRDS( "tmpResources/genesUp.Rds")
-genesDown <- readRDS("tmpResources/genesDown.Rds")
-kggUp <- readRDS( "tmpResources/kggUp.Rds")
-kggDTup <- readRDS( "tmpResources/kggDTup.Rds")
-goUp <- readRDS( "tmpResources/goUp.Rds")
-goDTup <- readRDS( "tmpResources/goDTup.Rds")
-kggDown <- readRDS( "tmpResources/kggDown.Rds")
-kggDTdown <- readRDS( "tmpResources/kggDTdown.Rds")
-goDown <- readRDS( "tmpResources/goDown.Rds")
-goDTdown <- readRDS( "tmpResources/goDTdown.Rds")
+library("edgeR")
+library("PoiClaClu")
+library("ggplot2")
+library("pheatmap")
+library("RColorBrewer")
+library("knitr")
+library("apeglm")
+library("calibrate")
+library("AnnotationDbi")
+library('org.Mm.eg.db')
+library('AnnotationHub')
+library('plotly')
+library('topGO')
+library('Rgraphviz')
+library("BiocParallel")
+library('clusterProfiler')
+library('pathview')
+library('gage')
+library('ggpubr')
+library('gageData')
+library('EnsDb.Mmusculus.v79')
+library('EnhancedVolcano')
+library('gplots')
+
 dds <- readRDS("tmpResources/deseq.Rds")
+
+genesUp <- readRDS("tmpResources/genesUp.Rds")
+genesDown <- readRDS("tmpResources/genesDown.Rds")
+
+#genesAll <- readRDS()
+
+kggUp <- readRDS("tmpResources/kggUp.Rds")
+kggDTup <- readRDS("tmpResources/kggDTup.Rds")
+kggDown <- readRDS("tmpResources/kggDown.Rds")
+kggDTdown <- readRDS("tmpResources/kggDTdown.Rds")
+
+#kggDTAll <- readRDS()
+
+goUp <- readRDS("tmpResources/goUp.Rds")
+goDTup <- readRDS("tmpResources/goDTup.Rds")
+goDown <- readRDS("tmpResources/goDown.Rds")
+goDTdown <- readRDS("tmpResources/goDTdown.Rds")
+
+#goDTAll <- readRDS()
+
 gsea <- readRDS("tmpResources/gsea.Rds")
 ```
 
 # Data preview
 
-## Metata experiment
+## Metadata experiment
 
 ```{r}
 metadata <- as.data.frame(colData(dds))
 metadata$sizeFactor <- round(metadata$sizeFactor,4)
-datatable( metadata, filter = list(position="top", clear=FALSE),
+datatable(metadata, filter = list(position="top", clear=FALSE),
            options = list(
                columnDefs = list(list(orderable = FALSE,
                className = "details-control",
@@ -81,16 +115,57 @@ datatable( metadata, filter = list(position="top", clear=FALSE),
 ## PCA gene expresión
 
 ```{r}
-plotPCA(rlog(dds), intgroup = params$variablepca )+
-            theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
-            theme(text = element_text(size=12))
+
+plotPCA(vst(dds), intgroup = params$variablepca, ntop = 300) +
+            theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm")) +
+            theme(text = element_text(size=12)) +
+  #ggtitle("PCA: AAV variability in 'vsd' transformation") +
+  scale_color_manual(values = c("#008000","#800080")) +
+  ggrepel::geom_text_repel(aes(label = paste("",dds$name, sep = "")))
+
 ```
+
+## Heatmaps
+
+```{r echo=FALSE, fig.show='hold', out.width = "50%", fig.align = "default"}
+
+sampleDists_vsd <- dist(t(assay(vst(dds))))
+
+sampleDistMatrix_vsd <- as.matrix( sampleDists_vsd )
+rownames(sampleDistMatrix_vsd) <- paste( dds$name, dds$AAV, sep = " - " )
+colnames(sampleDistMatrix_vsd) <- paste( dds$name, dds$AAV, sep = " - " )
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+pheatmap(sampleDistMatrix_vsd,
+         clustering_distance_rows = sampleDists_vsd,
+         clustering_distance_cols = sampleDists_vsd,
+         col = colors, main = 'heatmap clustering in vsd data')
+
+
+topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 25)
+mat  <- assay(vsd)[ topVarGenes, ]
+mat  <- mat - rowMeans(mat)
+
+df = data.frame(AAV = dds_fc_median10$AAV)
+rownames(df) <- (colnames(mat))
+colors <-  c("#008000","#800080")
+names(colors) <- unique(df$AAV)
+
+ann_color <- list(AAV = colors)
+
+pheatmap(mat, cellwidth= 10.5, cellheight = 8.5, cluster_rows=TRUE, show_colnames=TRUE, cluster_cols=TRUE, annotation_col = df, labels_col = paste( vsd$name, vsd$AAV, sep = " - " ), annotation_colors = ann_color)
+
+```
+
 
 ## Gene Expression results
 
 ```{r}
-res <- results(dds)
-res <- as.data.frame(res)
+
+deseq <- DESeq(dds)
+
+res <- results(deseq)
+res.sh <- lfcShrink(deseq, coef="AAV_SOCS3_vs_GFP", type="apeglm", res = res)
+res.sh <- as.data.frame(res.sh)
 datatable(
     round(res, 4),
     filter = list(position = "top", clear = FALSE),
@@ -109,6 +184,13 @@ datatable(
     )
 )
 ```
+
+## Volcano plot
+
+## MA plot
+
+
+
 
 # Kegg pathways enrichment
 
