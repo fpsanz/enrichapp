@@ -823,7 +823,8 @@ loadGenes <- function(filegenes){
   auxgenes <- genes
 }
 
-# PCA de un objeto DESeq #####################3
+# PCA de un objeto DESeq #####################
+
 plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = FALSE){
     # calculate the variance for each gene
     rv <- rowVars(assay(object))
@@ -858,13 +859,19 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = FALS
         return(d)
     }
     p <- ggplot(data = d,
-                aes_string(x = "PC1", y = "PC2", color = "group")) + geom_point(size = 3) +
+                aes_string(x = "PC1", y = "PC2", color = "group")) + 
+      geom_point(size = 3) +
+      ggtitle("PCA for VST data transformation") +
       xlab(paste0("PC1: ", round(percentVar[1] * 100), "% variance")) +
       ylab(paste0("PC2: ", round(percentVar[2] * 100), "% variance")) +
+      scale_color_manual(values = c("#008000","#800080")) +
       coord_fixed() +
+      ggrepel::geom_text_repel(aes(label = paste("",d$name, sep = ""))) +
       theme(text = element_text(size=20))
     return(p)
 }
+
+
 
 # Función para recuperar los genes up de un objeto DEseq #############
 # actualmente para p-val <= 0.05 fijo.

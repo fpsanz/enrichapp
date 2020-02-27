@@ -105,13 +105,13 @@ body <- dashboardBody(
                         align = "center",
                         offset = 2,
                         plotlyOutput("keggPlot"),
-                        width = 5
+                        width = 8
                       ),
                       column(
                         align = "center",
-                        offset = 0,
-                        chorddiagOutput("keggChord", width = "500px", height = "500px"),
-                        width = 4
+                        offset = 2,
+                        chorddiagOutput("keggChord", width = "700px", height = "700px"),
+                        width = 8
                       )
                     ),
                     fluidRow(
@@ -158,13 +158,13 @@ body <- dashboardBody(
                         align = "center",
                         offset = 2,
                         plotlyOutput("keggPlotDown"),
-                        width = 5
+                        width = 8
                       ),
                       column(
                         align = "center",
-                        offset = 0,
-                        chorddiagOutput("keggChordDown", width = "500px", height = "500px"),
-                        width = 4
+                        offset = 2,
+                        chorddiagOutput("keggChordDown", width = "700px", height = "700px"),
+                        width = 8
                       )
                     ),
                     fluidRow(
@@ -451,8 +451,8 @@ server <- function(input, output) {
     })
 # view pca plot data ###################
     output$pca <- renderPlot( {
-        validate(need(datos$dds, "Load file to render PCA"))
-        validate(need(variables(),"" ) )
+        validate(need(datos$dds, "Load file and condition to render PCA"))
+        validate(need(variables(),"Load condition to render PCA" ) )
         plotPCA(rlog(datos$dds), intgroup = variables() )+
             theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
             theme(text = element_text(size=20))

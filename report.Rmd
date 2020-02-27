@@ -116,12 +116,9 @@ datatable(metadata, filter = list(position="top", clear=FALSE),
 
 ```{r}
 
-plotPCA(vst(dds), intgroup = params$variablepca, ntop = 300) +
+plotPCA(vst(dds), intgroup = params$variablepca, ntop = 500) +
             theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm")) +
-            theme(text = element_text(size=12)) +
-  #ggtitle("PCA: AAV variability in 'vsd' transformation") +
-  scale_color_manual(values = c("#008000","#800080")) +
-  ggrepel::geom_text_repel(aes(label = paste("",dds$name, sep = "")))
+            theme(text = element_text(size=12))
 
 ```
 
@@ -141,18 +138,18 @@ pheatmap(sampleDistMatrix_vsd,
          col = colors, main = 'heatmap clustering in vsd data')
 
 
-topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 25)
-mat  <- assay(vsd)[ topVarGenes, ]
+topVarGenes <- head(order(rowVars(assay(vst(dds))), decreasing = TRUE), 25)
+mat  <- assay(vst(dds))[ topVarGenes, ]
 mat  <- mat - rowMeans(mat)
 
-df = data.frame(AAV = dds_fc_median10$AAV)
+df = data.frame(AAV = dds$AAV)
 rownames(df) <- (colnames(mat))
 colors <-  c("#008000","#800080")
 names(colors) <- unique(df$AAV)
 
 ann_color <- list(AAV = colors)
 
-pheatmap(mat, cellwidth= 10.5, cellheight = 8.5, cluster_rows=TRUE, show_colnames=TRUE, cluster_cols=TRUE, annotation_col = df, labels_col = paste( vsd$name, vsd$AAV, sep = " - " ), annotation_colors = ann_color)
+pheatmap(mat, cellwidth= 10.5, cellheight = 8.5, cluster_rows=TRUE, show_colnames=TRUE, cluster_cols=TRUE, annotation_col = df, labels_col = paste( dds$name, dds$AAV, sep = " - " ), annotation_colors = ann_color)
 
 ```
 
