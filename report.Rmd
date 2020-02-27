@@ -164,7 +164,7 @@ res <- results(deseq)
 res.sh <- lfcShrink(deseq, coef="AAV_SOCS3_vs_GFP", type="apeglm", res = res)
 res.sh <- as.data.frame(res.sh)
 datatable(
-    round(res, 4),
+    round(res.sh, 4),
     filter = list(position = "top", clear = FALSE),
     options = list(
         columnDefs = list(

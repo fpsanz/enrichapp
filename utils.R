@@ -825,7 +825,7 @@ loadGenes <- function(filegenes){
 
 # PCA de un objeto DESeq #####################
 
-plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = FALSE){
+plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE){
     # calculate the variance for each gene
     rv <- rowVars(assay(object))
     # select the ntop genes by variance
@@ -840,34 +840,58 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = FALS
     intgroup.df <-
         as.data.frame(colData(object)[, intgroup, drop = FALSE])
     # add the intgroup factors together to create a new grouping factor
-    group <- if (length(intgroup) > 1) {
-        factor(apply(intgroup.df, 1, paste, collapse = ":"))
-    } else {
-        colData(object)[[intgroup]]
+    # group <- if (length(intgroup) > 1) {
+    #     factor(apply(intgroup.df, 1, paste, collapse = ":"))
+    # } else {
+    #     colData(object)[[intgroup]]
+    # }
+    if(length(intgroup)>1){
+        colgroup <- factor(intgroup.df[ ,intgroup[1] ] )
+        shapegroup <- factor(intgroup.df[ ,intgroup[2] ] )
+    } else{
+        colgroup <- factor(intgroup.df[ ,intgroup[1] ] )
     }
     # assembly the data for the plot
     d <-
         data.frame(
             PC1 = pca$x[, 1],
             PC2 = pca$x[, 2],
-            group = group,
+            group = colgroup,
+            shape = shapegroup,
             intgroup.df,
             name = colnames(object)
         )
+    getPalette <- colorRampPalette(c("#008000","#800080"))
+    colours <- getPalette(length(levels(d$group)))
     if (returnData) {
         attr(d, "percentVar") <- percentVar[1:2]
-        return(d)
+        #return(d)
     }
+    
+    if(length(intgroup)>1){
     p <- ggplot(data = d,
+                aes_string(x = "PC1", y = "PC2", color = "group", shape = "shape")) + 
+      geom_point(size = 3) +
+      ggtitle("PCA for VST data transformation") +
+      xlab(paste0("PC1: ", round(percentVar[1] * 100), "% variance")) +
+      ylab(paste0("PC2: ", round(percentVar[2] * 100), "% variance")) +
+      scale_color_manual(values = colours, name = intgroup[1]) +
+      scale_shape_manual(values = seq_len(length(d$shape)), name=intgroup[2] )+
+      coord_fixed() +
+      ggrepel::geom_text_repel(aes(label = paste("",d$name, sep = ""))) +
+      theme(text = element_text(size=20))}
+        else{
+            p <- ggplot(data = d,
                 aes_string(x = "PC1", y = "PC2", color = "group")) + 
       geom_point(size = 3) +
       ggtitle("PCA for VST data transformation") +
       xlab(paste0("PC1: ", round(percentVar[1] * 100), "% variance")) +
       ylab(paste0("PC2: ", round(percentVar[2] * 100), "% variance")) +
-      scale_color_manual(values = c("#008000","#800080")) +
+      scale_color_manual(values = colours, name = intgroup[1]) +
       coord_fixed() +
       ggrepel::geom_text_repel(aes(label = paste("",d$name, sep = ""))) +
       theme(text = element_text(size=20))
+        }
     return(p)
 }
 

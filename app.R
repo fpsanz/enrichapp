@@ -405,7 +405,7 @@ server <- function(input, output) {
         validate(need(datos$dds, ""))
         nvars <- colData(datos$dds) %>% 
                     as.data.frame() %>% 
-                    select_if(is.factor) %>%
+                    #select_if(is.factor) %>%
                     names()
         selectInput("variables", label="Select condition[s] to plot PCA",
                     choices = nvars,
