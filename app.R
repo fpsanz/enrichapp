@@ -434,25 +434,30 @@ server <- function(input, output) {
       metadata <- as.data.frame(colData(datos$dds))
       metadata$sizeFactor <- round(metadata$sizeFactor,4)
       datatable( metadata, 
+                 rownames=FALSE,
                  filter = list(position="top", clear=FALSE),
                  options = list(
-                   rownames = FALSE,
                    columnDefs = list(list(orderable = FALSE,
                                           className = "details-control",
                                           targets = 1),
-                                     list(className = "dt-right", targets = 1:ncol(metadata))),
+                                     list(className = "dt-right", targets = 1:(ncol(metadata)-1))
+                   ),
                    dom = "Bfrtipl",
                    buttons = c("copy", "csv", "excel", "pdf", "print"),
                    list(pageLength = 10, white_space = "normal")
                  )
       )
-    })    
+    })  
 # preview table ###################
     output$preview <- DT::renderDataTable(server=TRUE,{
         validate(need(datos$dds, "Load file to render table"))
         res <- results(datos$dds)
         res <- as.data.frame(res)
-        datatable( round(res,4), 
+        conversion <- geneIdConverter(rownames(res))
+        res <- round(res,4)
+        res <- cbind(conversion$consensus, res)
+        #add_column(res, Symbol=conversion$consensus, .before = "baseMean")
+        datatable( res, 
                   filter = list(position="top", clear=FALSE),
                   options = list(
                   columnDefs = list(list(orderable = FALSE,
@@ -798,7 +803,7 @@ server <- function(input, output) {
             file.copy("flexReport.Rmd", tempReport, overwrite = TRUE)
             file.copy("utils.R", file.path(tempdir(),"utils.R"), overwrite = TRUE)
             file.copy("tmpResources/", tempdir(), overwrite = TRUE, recursive = TRUE)
-            #do.call(file.remove, list(list.files("tmpResources/", full.names = TRUE)))
+            do.call(file.remove, list(list.files("tmpResources/", full.names = TRUE)))
             
             # file.copy("genesUp.Rds", file.path(tempdir(), "genesUp.Rds"), overwrite = TRUE)
             # file.remove("genesUp.Rds")

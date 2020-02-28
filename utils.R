@@ -569,29 +569,30 @@ customKegg <- function(data, universe = NULL, restrict.universe = FALSE,
 
 # Función para crear tablas  con desplegable de genes ############
 datatable2 <- function(x, vars = NULL, opts = NULL, ...) {
-    names_x <- names(x)
-    if (is.null(vars))
-        stop("'vars' must be specified!")
-    pos <- match(vars, names_x)
-    if (any(map_chr(x[, pos], typeof) == "list"))
-        stop("list columns are not supported in datatable2()")
-    pos <- pos[pos <= ncol(x)] + 1
-    rownames(x) <- NULL
-    if (nrow(x) > 0)
-        x <- cbind(` ` = "&oplus;", x)
-    opts <- c(opts,
-              list(
-                  columnDefs = list(list(visible = FALSE, targets = c(0,pos)),
-                                    list(orderable = FALSE,
-                                         className = "details-control",
-                                         targets = 1),
-                                    list(className = "dt-left", targets = 1:3),
-                                    list(className = "dt-right",
-                                         targets = 4:ncol(x))),
-                  dom = "Bfrtipl",
-                  buttons = c("copy", "csv", "excel", "pdf", "print") ) )
-    datatable(x, ..., extensions = "Buttons", options = opts,
-              callback = JS(.callback2(x = x, pos = c(0, pos) ) ) )
+  names_x <- names(x)
+  if (is.null(vars))
+    stop("'vars' must be specified!")
+  pos <- match(vars, names_x)
+  if (any(map_chr(x[, pos], typeof) == "list"))
+    stop("list columns are not supported in datatable2()")
+  pos <- pos[pos <= ncol(x)] + 1
+  rownames(x) <- NULL
+  if (nrow(x) > 0)
+    x <- cbind(` ` = "&oplus;", x)
+  opts <- c(opts,
+            list(
+              columnDefs = list(list(visible = FALSE, targets = c(0,pos)),
+                                list(orderable = FALSE,
+                                     className = "details-control",
+                                     targets = 1),
+                                list(className = "dt-left", targets = 1:3),
+                                list(className = "dt-right",
+                                     targets = 4:ncol(x)),
+                                list(type = "scientific", targets = 4)),
+              dom = "Bfrtipl",
+              buttons = c("copy", "csv", "excel", "pdf", "print") ) )
+  datatable(x, ..., extensions = "Buttons", options = opts,
+            callback = JS(.callback2(x = x, pos = c(0, pos) ) ) )
 }
 
 # funcion auxiliar de datatable2 ##############################
