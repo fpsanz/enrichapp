@@ -22,8 +22,8 @@ header <- dashboardHeader(title = "RNAseq viewer and report App",
 sidebar <- dashboardSidebar(sidebarMenu(
                             menuItem(
                             fileInput("deseqFile",
-                                      "Choose RDS with Deseq object",
-                                      placeholder = "RDS DEseq"))),
+                                      "Choose RDS with DESeq object",
+                                      placeholder = "RDS DESeq"))),
                             sidebarMenu(
                               menuItem("Preview dataset",
                                        tabName = "preview",
@@ -64,12 +64,12 @@ body <- dashboardBody(
     tabItems(
         # preview tab
         tabItem(tabName = "preview",
-                h3("Sample info (colData)"),
+                h3("Samples info (colData)"),
                 fluidRow(
                     column(
                         width = 8,
                         offset = 2,
-                        dataTableOutput("samples")
+                        dataTableOutput("samples"),
                     )
                 ),
                 hr(),
@@ -82,6 +82,7 @@ body <- dashboardBody(
                     )
                 ),
                 hr(),
+                h3("PCA"),
                 fluidRow(column(
                         width = 8,
                         offset = 2,
@@ -93,12 +94,16 @@ body <- dashboardBody(
                 tabsetPanel(
                   tabPanel(
                     "Upregulated",
-                    fluidRow(column(
+                    hr(),
+                    h3("All pathways"),
+                    fluidRow(
+                      column(
                       width = 8,
                       offset = 2,
                       dataTableOutput("table")
                     )),
                     hr(),
+                    h3("BarPlot"),
                     fluidRow(
                       class = "text-center",
                       column(
@@ -106,14 +111,18 @@ body <- dashboardBody(
                         offset = 2,
                         plotlyOutput("keggPlot"),
                         width = 8
-                      ),
+                    )),
+                    hr(),
+                    h3("ChordPlot"),
+                    fluidRow(
                       column(
                         align = "center",
                         offset = 2,
                         chorddiagOutput("keggChord", width = "700px", height = "700px"),
                         width = 8
-                      )
-                    ),
+                    )),
+                    hr(),
+                    h3("DotPlot"),
                     fluidRow(
                       class="text-center",
                       column(
@@ -121,9 +130,9 @@ body <- dashboardBody(
                         offset= 2,
                         plotOutput("keggDotUp"),
                         width = 8
-                      )
-                    ),
+                    )),
                     hr(),
+                    h3("Heatmap"),
                     fluidRow(
                       class="text-center",
                       column(
@@ -131,9 +140,9 @@ body <- dashboardBody(
                         offset= 2,
                         plotOutput("heatmapKeggUp"),
                         width = 8
-                      )
-                    ),
+                      )),
                     hr(),
+                    h3("NetPlot"),
                     fluidRow(
                       class="text-center",
                       column(
@@ -141,17 +150,20 @@ body <- dashboardBody(
                         offset= 2,
                         plotOutput("cnetKeggUp"),
                         width = 8
-                      )
-                    )
+                    ))
                   ), # fin tabpanel upregulated
                   tabPanel(
                     "Downregulated",
-                    fluidRow(column(
+                    hr(),
+                    h3("All pathways"),
+                    fluidRow(
+                      column(
                       width = 8,
                       offset = 2,
                       dataTableOutput("tableDown")
                     )),
                     hr(),
+                    h3("BarPlot"),
                     fluidRow(
                       class = "text-center",
                       column(
@@ -159,14 +171,18 @@ body <- dashboardBody(
                         offset = 2,
                         plotlyOutput("keggPlotDown"),
                         width = 8
-                      ),
+                    )),
+                    hr(),
+                    h3("ChordPlot"),
+                    fluidRow(
                       column(
                         align = "center",
                         offset = 2,
                         chorddiagOutput("keggChordDown", width = "700px", height = "700px"),
                         width = 8
-                      )
-                    ),
+                    )),
+                    hr(),
+                    h3("DotPlot"),
                     fluidRow(
                       class="text-center",
                       column(
@@ -174,9 +190,9 @@ body <- dashboardBody(
                         offset= 2,
                         plotOutput("keggDotDown"),
                         width = 8
-                      )
-                    ),
+                    )),
                     hr(),
+                    h3("Heatmap"),
                     fluidRow(
                       class="text-center",
                       column(
@@ -187,6 +203,7 @@ body <- dashboardBody(
                       )
                     ),
                     hr(),
+                    h3("NetPlot"),
                     fluidRow(
                       class="text-center",
                       column(
@@ -194,8 +211,7 @@ body <- dashboardBody(
                         offset= 2,
                         plotOutput("cnetKeggDown"),
                         width = 8
-                      )
-                    )
+                    ))
                   ) # fin tabpanel
                 )),
         tabItem( tabName = "go", # GO tab GO tab
@@ -366,7 +382,7 @@ server <- function(input, output) {
     
     observeEvent(input$deseqFile, {
         datos$dds <- readRDS(input$deseqFile$datapath)
-        saveRDS(datos$dds, "tmpResources/deseq.Rds")
+        saveRDS(datos$dds, "tmpResources/dds.Rds")
         data$genesUp <- getSigUpregulated(datos$dds)
         data$genesDown <- getSigDownregulated(datos$dds)
         saveRDS(data$genesUp, "tmpResources/genesUp.Rds")
@@ -411,7 +427,27 @@ server <- function(input, output) {
                     choices = nvars,
                     multiple = TRUE)
     })
-  # preview table ###################
+    
+# preview samples ###################
+    output$samples <- DT::renderDataTable(server = TRUE,{
+      validate(need(datos$dds, "Load file to render table"))
+      metadata <- as.data.frame(colData(datos$dds))
+      metadata$sizeFactor <- round(metadata$sizeFactor,4)
+      datatable( metadata, 
+                 filter = list(position="top", clear=FALSE),
+                 options = list(
+                   rownames = FALSE,
+                   columnDefs = list(list(orderable = FALSE,
+                                          className = "details-control",
+                                          targets = 1),
+                                     list(className = "dt-right", targets = 1:ncol(metadata))),
+                   dom = "Bfrtipl",
+                   buttons = c("copy", "csv", "excel", "pdf", "print"),
+                   list(pageLength = 10, white_space = "normal")
+                 )
+      )
+    })    
+# preview table ###################
     output$preview <- DT::renderDataTable(server=TRUE,{
         validate(need(datos$dds, "Load file to render table"))
         res <- results(datos$dds)
@@ -423,25 +459,6 @@ server <- function(input, output) {
                                          className = "details-control",
                                          targets = 1),
                                     list(className = "dt-right", targets = 1:ncol(res))
-                                    ),
-                  dom = "Bfrtipl",
-                  buttons = c("copy", "csv", "excel", "pdf", "print"),
-                  list(pageLength = 10, white_space = "normal")
-                  )
-                  )
-    })
-  # preview samples ###################
-    output$samples <- DT::renderDataTable(server = TRUE,{
-        validate(need(datos$dds, "Load file to render table"))
-        metadata <- as.data.frame(colData(datos$dds))
-        metadata$sizeFactor <- round(metadata$sizeFactor,4)
-        datatable( metadata, 
-                  filter = list(position="top", clear=FALSE),
-                  options = list(
-                  columnDefs = list(list(orderable = FALSE,
-                                         className = "details-control",
-                                         targets = 1),
-                                    list(className = "dt-right", targets = 1:ncol(metadata))
                                     ),
                   dom = "Bfrtipl",
                   buttons = c("copy", "csv", "excel", "pdf", "print"),
@@ -489,7 +506,8 @@ server <- function(input, output) {
     })
 # KEGG dotplot UP ################### 
     output$keggDotUp <- renderPlot({
-      validate(need(kgg$up, "Load file to render dotPlot"))
+      validate(need(kgg$up, "Load file and select to render dotPlot"))
+      validate(need(rows(), "Select the paths of interest to render DotPlot"))
       kgg <- kgg$up
       nr <- rows()
       if(is.null(nr)){nr <- c(1:20)}
@@ -497,15 +515,16 @@ server <- function(input, output) {
     })
 # KEGG heatmap Up #################
     output$heatmapKeggUp <- renderPlot({
-      validate(need(rows(), ""))
+      validate(need(kgg$up, "Load file and select to render Heatmap"))
+      validate(need(rows(), "Select the paths of interest to render HeatMap"))
       validate(need(kggDT$up, ""))
       nr <- rows()
       heatmapKegg(kggDT$up, nr)
     })
 # KEGG cnet Up #################
     output$cnetKeggUp <- renderPlot({
-      validate(need(rows(), ""))
-      validate(need(kgg$up, ""))
+      validate(need(kgg$up, "Load file and select to render Net Plot"))
+      validate(need(rows(), "Select the paths of interest to render NetPlot"))
       nr <- rows()
       customCnetKegg(kgg$up, nr)
     })
@@ -540,7 +559,8 @@ server <- function(input, output) {
     })
 # KEEGG dotplot Down ################### 
     output$keggDotDown <- renderPlot({
-      validate(need(kgg$down, "Load file to render dotPlot"))
+      validate(need(kgg$down, "Load file to render DotPlot"))
+      validate(need(rowsdown(), "Select the paths of interest to render dotPlot"))
       kgg <- kgg$down
       nrdown <- rowsdown()
       if(is.null(nrdown)){nrdown <- c(1:20)}
@@ -548,15 +568,15 @@ server <- function(input, output) {
     })
 # KEGG heatmap Down #################
     output$heatmapKeggDown <- renderPlot({
-      validate(need(rowsdown(), ""))
-      validate(need(kggDT$down, ""))
+      validate(need(kgg$down, "Load file to render Heatmap"))
+      validate(need(rowsdown(), "Select the paths of interest to render Heatmap"))
       nrdown <- rowsdown()
       heatmapKegg(kggDT$down, nrdown)
     })
-# KEGG cnet Up #################
+# KEGG cnet Down #################
     output$cnetKeggDown <- renderPlot({
-      validate(need(rows(), ""))
-      validate(need(kgg$up, ""))
+      validate(need(kgg$down, "Load file to render NetPlot"))
+      validate(need(rowsdown(), "Select the paths of interest to render NetPlot"))
       nrdown <- rowsdown()
       customCnetKegg(kgg$down, nrdown)
     })
@@ -582,8 +602,8 @@ server <- function(input, output) {
 # GO BP dotplot up ################### 
     output$BPDotUp <- renderPlot({
       validate(need(go$up, "Load file to render dotPlot"))
+      validate(need(bprows(), "Select the terms of interest to render DotPlot"))
       gos <- go$up
-      
       bpnr <- bprows()
       if(is.null(bpnr)){bpnr <- c(1:20)}
       gosBP <- gos[gos$Ont=="BP",]
@@ -600,9 +620,6 @@ server <- function(input, output) {
                              ajax = list(serverSide = TRUE, processing = TRUE))
       )
     })
-    
-    
-    
 # GO plots MF UP #####################
     output$plotMF <- renderPlotly({
         validate(need(go$up, "Load file to render plot"))
@@ -615,6 +632,7 @@ server <- function(input, output) {
 # GO MF dotplot up ################### 
     output$MFDotUp <- renderPlot({
       validate(need(go$up, "Load file to render dotPlot"))
+      validate(need(mfrows(), "Select the terms of interest to render DotPlot"))
       gos <- go$up
       mfnr <- mfrows()
       if(is.null(mfnr)){mfnr <- c(1:20)}
@@ -644,6 +662,7 @@ server <- function(input, output) {
 # GO CC dotplot up ################### 
     output$CCDotUp <- renderPlot({
       validate(need(go$up, "Load file to render dotPlot"))
+      validate(need(ccrows(), "Select the terms of interest to render DotPlot"))
       gos <- go$up
       ccnr <- ccrows()
       if(is.null(ccnr)){ccnr <- c(1:20)}
@@ -672,6 +691,7 @@ server <- function(input, output) {
 # GO BP dotplot down ################### 
     output$BPDotDown <- renderPlot({
       validate(need(go$down, "Load file to render dotPlot"))
+      validate(need(bprowsdown(), "Select the terms of interest to render DotPlot"))
       gos <- go$down
       bpnrdown <- bprowsdown()
       if(is.null(bpnrdown)){bpnrdown <- c(1:20)}
@@ -701,6 +721,7 @@ server <- function(input, output) {
 # GO MF dotplot down ################### 
     output$MFDotDown <- renderPlot({
       validate(need(go$down, "Load file to render dotPlot"))
+      validate(need(mfrowsdown(), "Select the terms of interest to render DotPlot"))
       gos <- go$down
       mfnrdown <- mfrowsdown()
       if(is.null(mfnrdown)){mfnrdown <- c(1:20)}
@@ -730,6 +751,7 @@ server <- function(input, output) {
 # GO CC dotplot down ################### 
     output$CCDotDown <- renderPlot({
       validate(need(go$down, "Load file to render dotPlot"))
+      validate(need(ccrowsdown(), "Select the terms of interest to render DotPlot"))
       gos <- go$down
       ccnrdown <- ccrowsdown()
       if(is.null(ccnrdown)){ccnrdown <- c(1:20)}
@@ -772,11 +794,11 @@ server <- function(input, output) {
         # For PDF output, change this to "report.pdf"
         filename = "report.html",
         content = function(file) {
-            tempReport <- file.path(tempdir(), "report.Rmd")
-            file.copy("report.Rmd", tempReport, overwrite = TRUE)
+            tempReport <- file.path(tempdir(), "flexReport.Rmd")
+            file.copy("flexReport.Rmd", tempReport, overwrite = TRUE)
             file.copy("utils.R", file.path(tempdir(),"utils.R"), overwrite = TRUE)
             file.copy("tmpResources/", tempdir(), overwrite = TRUE, recursive = TRUE)
-            do.call(file.remove, list(list.files("tmpResources/", full.names = TRUE)))
+            #do.call(file.remove, list(list.files("tmpResources/", full.names = TRUE)))
             
             # file.copy("genesUp.Rds", file.path(tempdir(), "genesUp.Rds"), overwrite = TRUE)
             # file.remove("genesUp.Rds")

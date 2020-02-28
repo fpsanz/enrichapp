@@ -826,51 +826,60 @@ loadGenes <- function(filegenes){
 # PCA de un objeto DESeq #####################
 
 plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE){
-    # calculate the variance for each gene
-    rv <- rowVars(assay(object))
-    # select the ntop genes by variance
-    select <- order(rv, decreasing = TRUE)[seq_len(min(ntop, length(rv)))]
-    # perform a PCA on the data in assay(x) for the selected genes
-    pca <- prcomp(t(assay(object)[select, ]))
-    # the contribution to the total variance for each component
-    percentVar <- pca$sdev ^ 2 / sum(pca$sdev ^ 2)
-    if (!all(intgroup %in% names(colData(object)))) {
-        stop("the argument 'intgroup' should specify columns of colData(dds)")
-    }
-    intgroup.df <-
-        as.data.frame(colData(object)[, intgroup, drop = FALSE])
-    # add the intgroup factors together to create a new grouping factor
-    # group <- if (length(intgroup) > 1) {
-    #     factor(apply(intgroup.df, 1, paste, collapse = ":"))
-    # } else {
-    #     colData(object)[[intgroup]]
-    # }
-    if(length(intgroup)>1){
-        colgroup <- factor(intgroup.df[ ,intgroup[1] ] )
-        shapegroup <- factor(intgroup.df[ ,intgroup[2] ] )
-    } else{
-        colgroup <- factor(intgroup.df[ ,intgroup[1] ] )
-    }
-    # assembly the data for the plot
+  # calculate the variance for each gene
+  rv <- rowVars(assay(object))
+  # select the ntop genes by variance
+  select <- order(rv, decreasing = TRUE)[seq_len(min(ntop, length(rv)))]
+  # perform a PCA on the data in assay(x) for the selected genes
+  pca <- prcomp(t(assay(object)[select, ]))
+  # the contribution to the total variance for each component
+  percentVar <- pca$sdev ^ 2 / sum(pca$sdev ^ 2)
+  if (!all(intgroup %in% names(colData(object)))) {
+    stop("the argument 'intgroup' should specify columns of colData(dds)")
+  }
+  intgroup.df <-
+    as.data.frame(colData(object)[, intgroup, drop = FALSE])
+  # add the intgroup factors together to create a new grouping factor
+  # group <- if (length(intgroup) > 1) {
+  #     factor(apply(intgroup.df, 1, paste, collapse = ":"))
+  # } else {
+  #     colData(object)[[intgroup]]
+  # }
+  if(length(intgroup)>1){
+    colgroup <- factor(intgroup.df[ ,intgroup[1] ] )
+    shapegroup <- factor(intgroup.df[ ,intgroup[2] ] )
     d <-
-        data.frame(
-            PC1 = pca$x[, 1],
-            PC2 = pca$x[, 2],
-            group = colgroup,
-            shape = shapegroup,
-            intgroup.df,
-            name = colnames(object)
-        )
-    getPalette <- colorRampPalette(c("#008000","#800080"))
-    colours <- getPalette(length(levels(d$group)))
-    if (returnData) {
-        attr(d, "percentVar") <- percentVar[1:2]
-        #return(d)
-    }
-    
-    if(length(intgroup)>1){
+      data.frame(
+        PC1 = pca$x[, 1],
+        PC2 = pca$x[, 2],
+        group = colgroup,
+        shape = shapegroup,
+        intgroup.df,
+        name = colnames(object)
+      )
+  } else{
+    colgroup <- factor(intgroup.df[ ,intgroup[1] ] )
+    d <-
+      data.frame(
+        PC1 = pca$x[, 1],
+        PC2 = pca$x[, 2],
+        group = colgroup,
+        intgroup.df,
+        name = colnames(object)
+      )
+  }
+  # assembly the data for the plot
+  
+  getPalette <- colorRampPalette(c("#008000","#800080"))
+  colours <- getPalette(length(levels(d$group)))
+  if (returnData) {
+    attr(d, "percentVar") <- percentVar[1:2]
+    #return(d)
+  }
+  
+  if(length(intgroup)>1){
     p <- ggplot(data = d,
-                aes_string(x = "PC1", y = "PC2", color = "group", shape = "shape")) + 
+                aes_string(x = "PC1", y = "PC2", color = "group", shape = "shape")) +
       geom_point(size = 3) +
       ggtitle("PCA for VST data transformation") +
       xlab(paste0("PC1: ", round(percentVar[1] * 100), "% variance")) +
@@ -880,9 +889,9 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
       coord_fixed() +
       ggrepel::geom_text_repel(aes(label = paste("",d$name, sep = ""))) +
       theme(text = element_text(size=20))}
-        else{
-            p <- ggplot(data = d,
-                aes_string(x = "PC1", y = "PC2", color = "group")) + 
+  else{
+    p <- ggplot(data = d,
+                aes_string(x = "PC1", y = "PC2", color = "group")) +
       geom_point(size = 3) +
       ggtitle("PCA for VST data transformation") +
       xlab(paste0("PC1: ", round(percentVar[1] * 100), "% variance")) +
@@ -891,9 +900,10 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
       coord_fixed() +
       ggrepel::geom_text_repel(aes(label = paste("",d$name, sep = ""))) +
       theme(text = element_text(size=20))
-        }
-    return(p)
+  }
+  return(p)
 }
+
 
 
 
@@ -990,11 +1000,11 @@ heatmapKegg <- function(kdt, nr){
     xlab(NULL) + ylab(NULL) +
     theme_minimal() +
     theme(panel.grid.major = element_line(colour = "gray88", size = 0.8),
-          axis.text.x=element_text(angle = 90, hjust = 1, vjust = 0.5, size=5))+
+          axis.text.x=element_text(angle = 90, hjust = 1, vjust = 0.5, size=10))+
     # scale_fill_continuous(low="blue", high="red", name = "N")
     # scale_fill_brewer(palette = "YlOrRd")
     scale_fill_manual(values = getPalette(colourCount))+
-    theme(text = element_text(size=16, angle=45))
+    theme(text = element_text(size=16, angle=0))
   
 }
 
