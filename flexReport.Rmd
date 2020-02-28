@@ -20,7 +20,60 @@ params:
   author: NA
 ---
 
+```{r results="asis", echo=FALSE}
+cat("
+<style>
+.navbar-inverse .navbar-nav>li>a {
+    color: #ffffff;
+    background-color: #334969;
+}
 
+.navbar-inverse .navbar-nav>.active>a, .navbar-inverse .navbar-nav>.active>a:hover, .navbar-inverse .navbar-nav>.active>a:focus {
+    color: #ffffff;
+    background-color: #3b5e86;
+}
+
+.navbar-inverse .navbar-collapse, .navbar-inverse .navbar-form {
+    border-color: #396596;
+    background-color: #334969;
+}
+
+.container-fluid {
+    background-color: #334969;
+}
+
+.navbar-inverse .navbar-nav > .open > a, .navbar-inverse .navbar-nav > .open > a:hover, .navbar-inverse .navbar-nav > .open > a:focus {
+    background-color: #3b5e86;
+    color: #ffffff;
+
+}
+
+.dropdown-menu > .active > a, .dropdown-menu > .active > a:hover, .dropdown-menu > .active > a:focus {
+    color: #ffffff;
+    text-decoration: none;
+    outline: 0;
+    background-color: #3b5e86;
+}
+
+.navbar-inverse .navbar-nav > li > a:hover, .navbar-inverse .navbar-nav > li > a:focus {
+
+    color: #ffffff;
+    background-color: #3b5e86;
+}
+
+.navbar-inverse .navbar-nav > .open > a, .navbar-inverse .navbar-nav > .open > a:hover, .navbar-inverse .navbar-nav > .open > a:focus {
+
+    background-color: #3b5e86;
+    color: #ffffff;
+}
+.dropdown-menu > li > a:hover, .dropdown-menu > li > a:focus {
+    text-decoration: none;
+    color: #ffffff;
+    background-color: #3b5e86;
+}
+</style>
+")
+```
 
 ```{r setup, echo=FALSE, include=FALSE, comment=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, fig.width = 12)
@@ -49,13 +102,41 @@ dds <- readRDS("deseq.Rds")
 gsea <- readRDS("gsea.Rds")
 ```
 
+Data preview
+=====================================
+
+### Metata experiment
+
+```{r}
+metadata <- as.data.frame(colData(dds))
+metadata$sizeFactor <- round(metadata$sizeFactor,4)
+datatable( metadata, filter = list(position="top", clear=FALSE),
+           options = list(
+               columnDefs = list(list(orderable = FALSE,
+               className = "details-control",
+               targets = 1),
+               list(className = "dt-right", targets = 1:ncol(metadata))),
+               dom = "Bfrtipl",
+               buttons = c("copy", "csv", "excel", "pdf", "print"),
+               list(pageLength = 10, white_space = "normal")))
+```
+
+### PCA gene expresión
+
+```{r}
+plotPCA(rlog(dds), intgroup = params$variablepca )+
+            theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
+            theme(text = element_text(size=12))
+```
+
+
 All together {data-navmenu="Kegg"}
 =====================================
 
 Row 
 ------------------------------------
 
-### tabla
+### tabla {data-width=500}
 
 ```{r echo=FALSE}
 predata <- kegg2DT(kggUp[params$nr, ], genesUp, nrows = length(params$nr))
@@ -65,17 +146,32 @@ datatable2( predata,
             opts = list(pageLength = 10, white_space = "normal"))
 ```
 
+
+### text1
+
+#### Lorem ipsum
+
+Lorem ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.
+
+* asñlfk
+* sdfs
+* sdfds
+
+Row {data-height=350}
+------------------------------------
+
+### text2 {data-width=300}
+
+Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.
+
 ### Barplot
 
 ```{r  echo=FALSE}
 plotKegg(enrichdf = kggUp[params$nr,], nrows = length(params$nr) ) 
 ```
 
-
-
 Row
 ------------------------------------
-
 
 ### ChorPlot
 
@@ -106,11 +202,43 @@ customCnetKegg(kggUp, params$nr)
 ```
 
 
-
 Upregulated {data-navmenu="Kegg"}
 =====================================  
 
 
 Downregulated {data-navmenu="Kegg"}
 =====================================
+
+
+All together {data-navmenu="GO BP"}
+=====================================
+
+Upregulated {data-navmenu="GO BP"}
+=====================================
+
+Downregulated {data-navmenu="GO BP"}
+=====================================
+
+All together {data-navmenu="GO MF"}
+=====================================
+
+Upregulated {data-navmenu="GO MF"}
+=====================================
+
+Downregulated {data-navmenu="GO MF"}
+=====================================
+
+All together {data-navmenu="GO CC"}
+=====================================
+
+Upregulated {data-navmenu="GO CC"}
+=====================================
+
+Downregulated {data-navmenu="GO CC"}
+=====================================
+
+GSEA
+=====================================
+
+
 
