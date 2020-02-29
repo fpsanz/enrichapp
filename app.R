@@ -47,7 +47,8 @@ sidebar <- dashboardSidebar(sidebarMenu(
                               sidebarMenu(
                               menuItem(
                               textInput("author", value="your name...", label = h4("Author report name") )),
-                              downloadButton("report", "Generate report")
+                              #downloadButton("report", "Generate report")
+                              uiOutput("report")
                               )
                             ))
 ### BODY ###############
@@ -100,7 +101,7 @@ body <- dashboardBody(
                       column(
                       width = 8,
                       offset = 2,
-                      dataTableOutput("table")
+                      DTOutput("table")
                     )),
                     hr(),
                     h3("BarPlot"),
@@ -160,7 +161,7 @@ body <- dashboardBody(
                       column(
                       width = 8,
                       offset = 2,
-                      dataTableOutput("tableDown")
+                      DTOutput("tableDown")
                     )),
                     hr(),
                     h3("BarPlot"),
@@ -480,12 +481,10 @@ server <- function(input, output) {
             theme(text = element_text(size=20))
         })
 # KEGG table up#####################################
-    output$table <- DT::renderDataTable(server=TRUE,{
+    output$table <- DT::renderDT(server=TRUE,{
         validate(need(kgg$up, "Load file to render table"))
         kgg <- kgg$up
-        #genes <- data$genes
         predata <- kggDT$up
-        #predata <- kegg2DT(kgg, genes)
         datatable2(
             predata,
             vars = c("genes"),
@@ -535,7 +534,7 @@ server <- function(input, output) {
     })
     
 # KEGG table down #####################################
-    output$tableDown <- DT::renderDataTable(server=TRUE,{
+    output$tableDown <- DT::renderDT(server=TRUE,{
       validate(need(kgg$down, "Load file to render table"))
       kgg <- kgg$down
       predata <- kggDT$down
@@ -795,7 +794,11 @@ server <- function(input, output) {
 # author name ######################
     author <- reactive({input$author})
 # generate report #############################
-    output$report <- downloadHandler(
+    output$report <- renderUI({
+        validate(need(datos$dds, ""))
+        downloadButton("report2", "Generate report")
+    })
+    output$report2 <- downloadHandler(
         # For PDF output, change this to "report.pdf"
         filename = "report.html",
         content = function(file) {

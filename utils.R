@@ -579,19 +579,32 @@ datatable2 <- function(x, vars = NULL, opts = NULL, ...) {
   rownames(x) <- NULL
   if (nrow(x) > 0)
     x <- cbind(` ` = "&oplus;", x)
+  if(dim(x)[2]==7){
+      js <- c("function(row, data) {",
+                "if (data[5]>1000 | data[5]<1){",
+                "$('td:eq('+(4)+')', row).html(data[5].toExponential(1));",
+                "}",
+                "}")
+  }else if(dim(x)[2]==9){
+      js <- c("function(row, data) {",
+                "if (data[6]>1000 | data[6]<1){",
+                "$('td:eq('+(5)+')', row).html(data[6].toExponential(1));",
+                "}",
+                "}")
+  }
   opts <- c(opts,
             list(
               columnDefs = list(list(visible = FALSE, targets = c(0,pos)),
                                 list(orderable = FALSE,
-                                     className = "details-control",
-                                     targets = 1),
-                                list(className = "dt-left", targets = 1:3),
-                                list(className = "dt-right",
-                                     targets = 4:ncol(x)),
-                                list(type = "scientific", targets = 4)),
+                                     className = "details-control", targets = 1),
+                                list(className = "dt-left", targets = 1:2),
+                                list(className = "dt-right",targets = 3:ncol(x) 
+                                     )
+                                ),
+              rowCallback = JS(js),
               dom = "Bfrtipl",
               buttons = c("copy", "csv", "excel", "pdf", "print") ) )
-  datatable(x, ..., extensions = "Buttons", options = opts,
+  datatable(x, ..., extensions = "Buttons", options = opts, 
             callback = JS(.callback2(x = x, pos = c(0, pos) ) ) )
 }
 
@@ -659,7 +672,7 @@ go2DT <- function(enrichdf, data, orderby = NULL, nrows = NULL) {
     if(!is.null(nrows) & is.numeric(nrows)){
         CAup <- CAup[1:nrows, ]
     }
-    CAup <- CAup %>% mutate(P.DE = format(P.DE, scientific = T, digits = 4))
+    #CAup <- CAup %>% mutate(P.DE = format(P.DE, scientific = T, digits = 4))
     return(CAup)
 }
 
@@ -765,7 +778,7 @@ kegg2DT <- function(enrichdf, data, orderby = NULL, nrows = NULL) {
     if(!is.null(nrows) & is.numeric(nrows)){
         CAup <- CAup[1:nrows, ]
     }
-    CAup <- CAup %>% mutate(P.DE = format(P.DE, scientific = T, digits = 4))
+    #CAup <- CAup %>% mutate(P.DE = format(P.DE, scientific = T, digits = 4))
     return(CAup)
 }
 
