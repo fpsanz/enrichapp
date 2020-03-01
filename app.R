@@ -48,7 +48,7 @@ sidebar <- dashboardSidebar(sidebarMenu(
                               menuItem(
                               textInput("author", value="your name...", label = h4("Author report name") )),
                               #downloadButton("report", "Generate report")
-                              uiOutput("report")
+                              column(12, align = "center", offset=0, uiOutput("report"))
                               )
                             ))
 ### BODY ###############
@@ -59,7 +59,7 @@ body <- dashboardBody(
     )),
     div(
         class = "busy",
-        p("Loading data and computing enrichment, please be patient..."),
+        h4("Loading data and computing enrichment, please be patient..."),
         img(src = "dna.gif")
     ),
     tabItems(
@@ -79,7 +79,7 @@ body <- dashboardBody(
                     column(
                         width = 8,
                         offset = 2,
-                        dataTableOutput("preview")
+                        DTOutput("preview")
                     )
                 ),
                 hr(),
@@ -93,6 +93,66 @@ body <- dashboardBody(
         # kegg tab content
         tabItem(tabName = "kegg",
                 tabsetPanel(
+                    tabPanel(
+                    "All DE genes",
+                    hr(),
+                    h3("All pathways"),
+                    fluidRow(
+                      column(
+                      width = 8,
+                      offset = 2,
+                      DTOutput("tableAll")
+                    )),
+                    hr(),
+                    h3("BarPlot"),
+                    fluidRow(
+                      class = "text-center",
+                      column(
+                        align = "center",
+                        offset = 2,
+                        plotlyOutput("keggPlotAll"),
+                        width = 8
+                    )),
+                    hr(),
+                    h3("ChordPlot"),
+                    fluidRow(
+                      column(
+                        align = "center",
+                        offset = 2,
+                        chorddiagOutput("keggChordAll", width = "700px", height = "700px"),
+                        width = 8
+                    )),
+                    hr(),
+                    h3("DotPlot"),
+                    fluidRow(
+                      class="text-center",
+                      column(
+                        align = "center",
+                        offset= 2,
+                        plotOutput("keggDotAll"),
+                        width = 8
+                    )),
+                    hr(),
+                    h3("Heatmap"),
+                    fluidRow(
+                      class="text-center",
+                      column(
+                        align = "center",
+                        offset= 2,
+                        plotOutput("heatmapKeggAll"),
+                        width = 8
+                      )),
+                    hr(),
+                    h3("NetPlot"),
+                    fluidRow(
+                      class="text-center",
+                      column(
+                        align = "center",
+                        offset= 2,
+                        plotOutput("cnetKeggAll"),
+                        width = 8
+                    ))
+                  ),
                   tabPanel(
                     "Upregulated",
                     hr(),
@@ -373,40 +433,55 @@ ui <- dashboardPage(title="Rnaseq viewer and report",
 
 ########################################## SERVER #################################################
 server <- function(input, output) {
-    data <- reactiveValues()
-    goDT <- reactiveValues()
-    kgg <- reactiveValues()
-    go <- reactiveValues()
-    kggDT <- reactiveValues()
-    datos <- reactiveValues(dds=NULL)
-    gsea <- reactiveValues()
+    data <- reactiveValues() # genes
+    goDT <- reactiveValues() #pretabla GO
+    kgg <- reactiveValues() # enrich kegg
+    go <- reactiveValues() # enrich GO
+    kggDT <- reactiveValues() # pretabla kegg
+    datos <- reactiveValues(dds=NULL) #objetos dds post DESeq()
+    gsea <- reactiveValues() # objeto GSEA
+    
     
     observeEvent(input$deseqFile, {
         datos$dds <- readRDS(input$deseqFile$datapath)
         saveRDS(datos$dds, "tmpResources/dds.Rds")
+        
         data$genesUp <- getSigUpregulated(datos$dds)
         data$genesDown <- getSigDownregulated(datos$dds)
+        data$genesall <- rbind(data$genesUp, data$genesDown)
+        saveRDS(data$genesall, "tmpResources/genesall.Rds")
         saveRDS(data$genesUp, "tmpResources/genesUp.Rds")
         saveRDS(data$genesDown, "tmpResources/genesDown.Rds")
+        
+        kgg$all <- customKegg(data$genesall, species = "Mm", species.KEGG = "mmu")
+        saveRDS(kgg$all, "tmpResources/kggAll.Rds")
+        kggDT$all <- kegg2DT(kgg$all, data$genesall)
+        saveRDS(kggDT$all, "tmpResources/kggDTall.Rds")
+        
         kgg$up <- customKegg(data$genesUp, species = "Mm", species.KEGG = "mmu")
         saveRDS(kgg$up, "tmpResources/kggUp.Rds")
         kggDT$up <- kegg2DT(kgg$up, data$genesUp)
         saveRDS(kggDT$up, "tmpResources/kggDTup.Rds")
-        go$up <- customGO(data$genesUp, species = "Mm")
-        saveRDS(go$up, "tmpResources/goUp.Rds")
-        goDT$up <- go2DT(enrichdf = go$up, data = data$genesUp )
-        saveRDS(goDT$up, "tmpResources/goDTup.Rds")
+        
         kgg$down <- customKegg(data$genesDown, species = "Mm", species.KEGG = "mmu")
         saveRDS(kgg$down, "tmpResources/kggDown.Rds")
         kggDT$down <- kegg2DT(kgg$down, data$genesDown)
         saveRDS(kggDT$down, "tmpResources/kggDTdown.Rds")
+        
+        go$up <- customGO(data$genesUp, species = "Mm")
+        saveRDS(go$up, "tmpResources/goUp.Rds")
+        goDT$up <- go2DT(enrichdf = go$up, data = data$genesUp )
+        saveRDS(goDT$up, "tmpResources/goDTup.Rds")
+        
         go$down <- customGO(data$genesDown, species = "Mm")
         saveRDS(go$down, "tmpResources/goDown.Rds")
         goDT$down <- go2DT(enrichdf = go$down, data = data$genesDown )
         saveRDS(goDT$down, "tmpResources/goDTdown.Rds")
         
+        
     })
   # generate reactive variable ###################
+    rowsAll <- reactive({input$tableAll_rows_selected})
     rows <- reactive({input$table_rows_selected})
     bprows <- reactive({input$tableBP_rows_selected})
     mfrows <- reactive({input$tableMF_rows_selected})
@@ -417,12 +492,12 @@ server <- function(input, output) {
     ccrowsdown <- reactive({input$tableCCdown_rows_selected})
     variables <- reactive({input$variables})
     gsearow <- reactive({input$gseaTable_rows_selected})
-  # ui selector sample groups ###################
+# ui selector sample groups ###################
     output$sampleGroup <- renderUI({
         validate(need(datos$dds, ""))
         nvars <- colData(datos$dds) %>% 
                     as.data.frame() %>% 
-                    #select_if(is.factor) %>%
+                    select(-c(sizeFactor,replaceable)) %>% 
                     names()
         selectInput("variables", label="Select condition[s] to plot PCA",
                     choices = nvars,
@@ -432,8 +507,7 @@ server <- function(input, output) {
 # preview samples ###################
     output$samples <- DT::renderDataTable(server = TRUE,{
       validate(need(datos$dds, "Load file to render table"))
-      metadata <- as.data.frame(colData(datos$dds))
-      metadata$sizeFactor <- round(metadata$sizeFactor,4)
+      metadata <- as.data.frame(colData(deseq)) %>% select(-c(sizeFactor,replaceable))
       datatable( metadata, 
                  rownames=FALSE,
                  filter = list(position="top", clear=FALSE),
@@ -450,13 +524,13 @@ server <- function(input, output) {
       )
     })  
 # preview table ###################
-    output$preview <- DT::renderDataTable(server=TRUE,{
+    output$preview <- DT::renderDT(server=TRUE,{
         validate(need(datos$dds, "Load file to render table"))
         res <- results(datos$dds)
         res <- as.data.frame(res)
         conversion <- geneIdConverter(rownames(res))
         res <- round(res,4)
-        res <- cbind(conversion$consensus, res)
+        res <- cbind(`Gene name`=conversion$consensus, res)
         #add_column(res, Symbol=conversion$consensus, .before = "baseMean")
         datatable( res, 
                   filter = list(position="top", clear=FALSE),
@@ -466,6 +540,14 @@ server <- function(input, output) {
                                          targets = 1),
                                     list(className = "dt-right", targets = 1:ncol(res))
                                     ),
+                  rowCallback = JS(
+                                "function(row, data) {",
+                                "for (i = 6; i < 8; i++) {",
+                                "if (data[i]>1000 | data[i]<1){",
+                                "$('td:eq('+i+')', row).html(data[i].toExponential(3));",
+                                "}",
+                                "}",
+                                "}"),
                   dom = "Bfrtipl",
                   buttons = c("copy", "csv", "excel", "pdf", "print"),
                   list(pageLength = 10, white_space = "normal")
@@ -480,6 +562,58 @@ server <- function(input, output) {
             theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
             theme(text = element_text(size=20))
         })
+# KEGG table All #####################################
+    output$tableAll <- DT::renderDT(server=TRUE,{
+        validate(need(kgg$all, "Load file to render table"))
+        kgg <- kgg$all
+        predata <- kggDT$all
+        datatable2(
+            predata,
+            vars = c("genes"),
+            filter = list(position="top", clear=FALSE),
+            escape = FALSE,
+            opts = list(pageLength = 10, white_space = "normal"))
+        }) 
+# KEGG barplot All ################
+    output$keggPlotAll <- renderPlotly ({
+        validate(need(kgg$all, "Load file to render BarPlot"))
+        kgg <- kgg$all
+        nr <- rowsAll()
+        if(is.null(nr)){nr <- c(1:10)}
+        plotKegg(enrichdf = kgg[nr,], nrows = length(nr))
+    })
+# KEGG chordiag plot All ###############
+    output$keggChordAll <- renderChorddiag({
+        validate(need(kgg$all, "Load file to render ChordPlot"))
+        kgg <- kgg$all
+        nr <- rowsAll()
+        if(is.null(nr)){nr <- c(1:10)}
+        chordPlot(kgg[nr, ], nRows = length(nr), orderby = "P.DE")
+    })
+# KEGG dotplot All ################### 
+    output$keggDotAll <- renderPlot({
+      validate(need(kgg$all, "Load file and select to render dotPlot"))
+      validate(need(rowsAll(), "Select the paths of interest to render DotPlot"))
+      kgg <- kgg$all
+      nr <- rowsAll()
+      if(is.null(nr)){nr <- c(1:20)}
+      dotPlotkegg(kgg[nr,], n = length(nr))
+    })
+# KEGG heatmap All #################
+    output$heatmapKeggAll <- renderPlot({
+      validate(need(kgg$all, "Load file and select to render Heatmap"))
+      validate(need(rowsAll(), "Select the paths of interest to render HeatMap"))
+      validate(need(kggDT$all, ""))
+      nr <- rowsAll()
+      heatmapKegg(kggDT$up, nr)
+    })
+# KEGG cnet All #################
+    output$cnetKeggAll <- renderPlot({
+      validate(need(kgg$all, "Load file and select to render Net Plot"))
+      validate(need(rowsAll(), "Select the paths of interest to render NetPlot"))
+      nr <- rowsAll()
+      customCnetKegg(kgg$all, nr)
+    })
 # KEGG table up#####################################
     output$table <- DT::renderDT(server=TRUE,{
         validate(need(kgg$up, "Load file to render table"))

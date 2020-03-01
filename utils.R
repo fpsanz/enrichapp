@@ -582,13 +582,13 @@ datatable2 <- function(x, vars = NULL, opts = NULL, ...) {
   if(dim(x)[2]==7){
       js <- c("function(row, data) {",
                 "if (data[5]>1000 | data[5]<1){",
-                "$('td:eq('+(4)+')', row).html(data[5].toExponential(1));",
+                "$('td:eq('+(4)+')', row).html(data[5].toExponential(3));",
                 "}",
                 "}")
   }else if(dim(x)[2]==9){
       js <- c("function(row, data) {",
                 "if (data[6]>1000 | data[6]<1){",
-                "$('td:eq('+(5)+')', row).html(data[6].toExponential(1));",
+                "$('td:eq('+(5)+')', row).html(data[6].toExponential(3));",
                 "}",
                 "}")
   }
