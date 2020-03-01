@@ -31,3 +31,6 @@
 
 ## TODOs
 
+* Hacer all together en GO
+* Poner en marcha report
+* Sugerencias??¿??¿?
