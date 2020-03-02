@@ -20,6 +20,41 @@
 | NetPlot   | **cnetKeggAll**    | **cnetKeggUp**    | **cnetKeggDown**    |
 |           |                    |                   |                     |
 
+## Pestaña GO BP
+
+| ELEMENTO | all_together | upregulated | downregulated   |
+| -------- | ------------ | ----------- | --------------- |
+| Tabla    |              | **tableBP** | **tableBPdown** |
+| Barplot  |              | **plotBP**  | **plotBPdown**  |
+| Dotplot  |              | **BPDotUp** | **BPDotdown**   |
+
+## Pestaña GO MF
+
+| ELEMENTO | all_together | upregulated | downregulated   |
+| -------- | ------------ | ----------- | --------------- |
+| Tabla    |              | **tableMF** | **tableMFdown** |
+| Barplot  |              | **plotMF**  | **plotMFdown**  |
+| Dotplot  |              | **MFDotUp** | **MFDotdown**   |
+
+## Pestaña GO CC
+
+| ELEMENTO | all_together | upregulated | downregulated   |
+| -------- | ------------ | ----------- | --------------- |
+| Tabla    |              | **tableCC** | **tableCCdown** |
+| Barplot  |              | **plotCC**  | **plotCCdown**  |
+| Dotplot  |              | **CCDotUp** | **CCDotdown**   |
+
+
+
+## Pestaña GSEA
+
+| ELEMENTO | All genes deseq |
+| -------- | --------------- |
+| Tabla    | **gseaTable**   |
+| Barplot  | **gseaPlot**    |
+
+
+
 ## Diario de acciones
 
 01/03/2020: FPS: 
