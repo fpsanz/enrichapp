@@ -16,10 +16,13 @@ options(shiny.maxRequestSize = 3000*1024^2)
  ### HEADER ############
 header <- dashboardHeader(title = "RNAseq viewer and report App", 
                   titleWidth = 300, 
-                  dropdownMenuOutput("messageMenu")
+                  dropdownMenuOutput("messageMenu"),
+                  tags$li(class = "dropdown", actionButton("aboutButton", "About"),
+                          style="margin-top:8px; margin-right: 5px")
                   )
 ### SIDEBAR ##########
-sidebar <- dashboardSidebar(sidebarMenu(
+sidebar <- dashboardSidebar(useShinyalert(),
+                            sidebarMenu(
                             menuItem(
                             fileInput("deseqFile",
                                       "Choose RDS with DESeq object",
@@ -46,9 +49,14 @@ sidebar <- dashboardSidebar(sidebarMenu(
                               ),
                               sidebarMenu(
                               menuItem(
-                              textInput("author", value="your name...", label = h4("Author report name") )),
-                              #downloadButton("report", "Generate report")
-                              column(12, align = "center", offset=0, uiOutput("report"))
+                              textInput("author", value="your name...", label = h4("Author report name")
+                                        )),
+                              sidebarMenu( 
+                                menuItem(
+                                  column(12, align = "center", offset=0, uiOutput("report")))),
+                              sidebarMenu(
+                                menuItem(
+                                  column(12, align = "center", offset=0, uiOutput("pdf"))))
                               )
                             ))
 ### BODY ###############
@@ -500,6 +508,14 @@ ui <- dashboardPage(title="Rnaseq viewer and report",
 
 ########################################## SERVER #################################################
 server <- function(input, output) {
+    
+  observeEvent(input$aboutButton, {
+            shinyalert("Enrich app 2020", "Authors:
+            Miriam Riquelme Pérez (correspondence author)
+            Fernando Pérez Sanz
+            For any suggestion or bug, please contact us
+            miriam.riquelmep@gmail.com", type="info")})
+  
     data <- reactiveValues() # genes
     goDT <- reactiveValues() #pretabla GO
     kgg <- reactiveValues() # enrich kegg
@@ -1094,8 +1110,13 @@ server <- function(input, output) {
     author <- reactive({input$author})
 # generate report #############################
     output$report <- renderUI({
-        validate(need(datos$dds, ""))
+        #validate(need(datos$dds, ""))
         downloadButton("report2", "Generate report")
+      
+    })
+    output$pdf <- renderUI({
+      #validate(need(datos$dds, ""))
+      downloadButton("reportpdf", "Generate pdf report")
     })
     output$report2 <- downloadHandler(
         # For PDF output, change this to "report.pdf"
