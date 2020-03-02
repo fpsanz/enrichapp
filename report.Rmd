@@ -1,4 +1,4 @@
----
+  ---
 title: "RNAseq viewer report"
 author: "`r params$author`"
 date: "`r format(Sys.time(), '%d %B %Y')`"

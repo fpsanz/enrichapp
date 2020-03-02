@@ -55,6 +55,36 @@
 
 
 
+## Variables observeEvent
+
+| variable | valores                         | contenido              |
+| -------- | ------------------------------- | ---------------------- |
+| data     | $genesUp, $genesDown, $genesall | listados de genes      |
+| goDT     | $up, $down                      | pretabla GO            |
+| go       | $up, $down                      | tabla enrich GO        |
+| kgg      | $up, $down, $all                | tabla enrich Kegg      |
+| kggDT    | $up, $down. $all                | pretabla enrich Kegg   |
+| datos    | $dds                            | objeto DESeq importado |
+| gsea     | $gsea                           | objeto GSEA            |
+
+## Variable reactive
+
+| Variable   | contenido                          |
+| ---------- | ---------------------------------- |
+| rowsAll    | filas seleccionadas de tableAll    |
+| rows       | filas seleccionadas de table       |
+| rowdown    | filas seleccionadas de tableDown   |
+| bprows     | filas seleccionadas de tableBP     |
+| mfrows     | filas seleccionadas de tableMF     |
+| ccrows     | filas seleccionadas de tableCC     |
+| bprowndown | filas seleccionadas de tableBPdown |
+| mfrowsdown | filas seleccionadas de tableMFdown |
+| ccrowsdown | filas seleccionadas de tableCCdown |
+| variables  | Variables seleccionadas para PCA   |
+| gsearow    | filas seleccionadas para GSEA      |
+
+
+
 ## Diario de acciones
 
 01/03/2020: FPS: 
