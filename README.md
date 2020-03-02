@@ -22,27 +22,27 @@
 
 ## Pestaña GO BP
 
-| ELEMENTO | all_together | upregulated | downregulated   |
-| -------- | ------------ | ----------- | --------------- |
-| Tabla    |              | **tableBP** | **tableBPdown** |
-| Barplot  |              | **plotBP**  | **plotBPdown**  |
-| Dotplot  |              | **BPDotUp** | **BPDotdown**   |
+| ELEMENTO | all_together   | upregulated | downregulated   |
+| -------- | -------------- | ----------- | --------------- |
+| Tabla    | **tableBPall** | **tableBP** | **tableBPdown** |
+| Barplot  | **plotBPall**  | **plotBP**  | **plotBPdown**  |
+| Dotplot  | **BPDotall**   | **BPDotUp** | **BPDotdown**   |
 
 ## Pestaña GO MF
 
-| ELEMENTO | all_together | upregulated | downregulated   |
-| -------- | ------------ | ----------- | --------------- |
-| Tabla    |              | **tableMF** | **tableMFdown** |
-| Barplot  |              | **plotMF**  | **plotMFdown**  |
-| Dotplot  |              | **MFDotUp** | **MFDotdown**   |
+| ELEMENTO | all_together   | upregulated | downregulated   |
+| -------- | -------------- | ----------- | --------------- |
+| Tabla    | **tableMFall** | **tableMF** | **tableMFdown** |
+| Barplot  | **plotMFall**  | **plotMF**  | **plotMFdown**  |
+| Dotplot  | **MFDotall**   | **MFDotUp** | **MFDotdown**   |
 
 ## Pestaña GO CC
 
-| ELEMENTO | all_together | upregulated | downregulated   |
-| -------- | ------------ | ----------- | --------------- |
-| Tabla    |              | **tableCC** | **tableCCdown** |
-| Barplot  |              | **plotCC**  | **plotCCdown**  |
-| Dotplot  |              | **CCDotUp** | **CCDotdown**   |
+| ELEMENTO | all_together   | upregulated | downregulated   |
+| -------- | -------------- | ----------- | --------------- |
+| Tabla    | **tableCCall** | **tableCC** | **tableCCdown** |
+| Barplot  | **plotCCall**  | **plotCC**  | **plotCCdown**  |
+| Dotplot  | **CCDotall**   | **CCDotUp** | **CCDotdown**   |
 
 
 
@@ -63,7 +63,7 @@
 | goDT     | $up, $down                      | pretabla GO            |
 | go       | $up, $down                      | tabla enrich GO        |
 | kgg      | $up, $down, $all                | tabla enrich Kegg      |
-| kggDT    | $up, $down. $all                | pretabla enrich Kegg   |
+| kggDT    | $up, $down, $all                | pretabla enrich Kegg   |
 | datos    | $dds                            | objeto DESeq importado |
 | gsea     | $gsea                           | objeto GSEA            |
 
