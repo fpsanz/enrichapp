@@ -14,6 +14,10 @@ params:
   bpnrdown: NA
   mfnrdown: NA
   ccnrdown: NA
+  nrall: NA
+  bpnrall: NA
+  mfnrall: NA
+  ccnrall: NA
   variablepca: NA
   tempdir: NA
   gseanr: NA
@@ -76,7 +80,7 @@ cat("
 ```
 
 ```{r setup, echo=FALSE, include=FALSE, comment=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, fig.width = 12, eval=FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, fig.width = 12, eval=TRUE)
 
 library('dygraphs')
 library('flexdashboard')
@@ -96,6 +100,7 @@ library('shinydashboard')
 setwd(params$tempdir)
 genesUp <- readRDS( "tmpResources/genesUp.Rds")
 genesDown <- readRDS("tmpResources/genesDown.Rds")
+genesall <- readRDS("tmpResources/kggDTall.Rds")
 kggUp <- readRDS( "tmpResources/kggUp.Rds")
 kggDTup <- readRDS( "tmpResources/kggDTup.Rds")
 goUp <- readRDS( "tmpResources/goUp.Rds")
@@ -106,6 +111,8 @@ goDown <- readRDS( "tmpResources/goDown.Rds")
 goDTdown <- readRDS( "tmpResources/goDTdown.Rds")
 dds <- readRDS("tmpResources/dds.Rds")
 gsea <- readRDS("tmpResources/gsea.Rds")
+kggAll <- readRDS( "tmpResources/kggAll.Rds")
+kggDTall <- readRDS( "tmpResources/kggDTall.Rds")
 ```
 
 
@@ -116,61 +123,100 @@ Data preview
 Row
 --------------------------------------
 
-### Generic tab text
+### Biological context
 
 ```{r results="asis", eval=TRUE}
-texto <- "#### esto es un texto genérico que describe esta pestaña
-aqui se pone cualquier cosa.
 
-como si fuese un texto normal"
+texto <- "
+* Samples background: CE1502 - Astrocytes WT with two different AAV (GFP vs SOCS3) extracted from the Kelly AD project.
+* Raw data (Fasta files): /local/aa_SideProject_ComparisonWT/FASTAfiles
+* Bam files
+    * Aligned Genosplice (STAR 2.4): /home/Pactivastro/Genosplice-BAMfiles (All) or /local/aa_SideProject_ComparisonWT/BAMstar (subset)
+
+–outSAMstrandField intronMotif –outFilterMismatchNmax 2 –outFilterMultimapNmax 10 –outSAMunmapped Within –outSAMtype BAM SortedByCoordinate –outStd BAM_SortedByCoordinate –genomeLoad NoSharedMemory –chimSegmentMin 15
+
+* Aligned myself (STAR with customed genome adding GFPV5): /local/aa_SideProject_ComparisonWT/CUSTOM
+* Aligned myself (HISAT2): /local/aa_SideProject_ComparisonWT/BAMhisat2
+* Folder routes for the whole project
+    * Local linux: /local/aa_SideProject_ComparisonWT (Full data files)
+    * Pactivastro: /home/Pactivastro/Resultats-manip/Miriam/aa_SideProject_ComparisonWT (Only reports)
+"
 cat(texto)
 ```
 
 Row
 --------------------------------------
 
-### Especific comment to results {data-width=500}
+### Metata experiment {data-width=500}
+
+```{r}
+
+metadata <- as.data.frame(colData(dds)) %>% select(-c(sizeFactor,replaceable))
+      datatable( metadata, 
+                 rownames=FALSE,
+                 filter = list(position="top", clear=FALSE),
+                 options = list(
+                   columnDefs = list(list(orderable = FALSE,
+                                          className = "details-control",
+                                          targets = 1),
+                                     list(className = "dt-right", targets = 1:(ncol(metadata)-1))
+                   ),
+                   dom = "Bfrtipl",
+                   buttons = c("copy", "csv", "excel", "pdf", "print"),
+                   list(pageLength = 10, white_space = "normal")
+                 )
+      )
+```
+
+### Especific comment {data-width=500}
 
 ```{r results="asis"}
 
 ```
 
-
-### Metata experiment {data-width=500}
-
-```{r}
-
-metadata <- as.data.frame(colData(dds))
-metadata$sizeFactor <- round(metadata$sizeFactor,4)
-datatable( metadata, 
-           rownames=FALSE,
-           filter = list(position="top", clear=FALSE),
-           options = list(
-               columnDefs = list(list(orderable = FALSE,
-               className = "details-control",
-               targets = 1),
-               list(className = "dt-right", targets = 1:(ncol(metadata)-1))),
-               dom = "Bfrtipl",
-               buttons = c("copy", "csv", "excel", "pdf", "print"),
-               list(pageLength = 10, white_space = "normal")))
-```
-
 Row
 --------------------------------------
 
-### DEseq results {data-width=500}
+### DEseq results 
 
 ```{r}
-
+res <- results(dds)
+res <- as.data.frame(res)
+res <- res[res$padj<=0.05, ]
+conversion <- geneIdConverter(rownames(res))
+res <- round(res,4)
+res <- cbind(`Gene name`=conversion$consensus, res)
+#add_column(res, Symbol=conversion$consensus, .before = "baseMean")
+datatable( res, 
+           filter = list(position="top", clear=FALSE),
+           options = list(
+               columnDefs = list(list(orderable = FALSE,
+                                      className = "details-control",
+                                      targets = 1),
+                                 list(className = "dt-right", targets = 1:ncol(res))
+               ),
+               rowCallback = JS(
+                   "function(row, data) {",
+                   "for (i = 6; i < 8; i++) {",
+                   "if (data[i]>1000 | data[i]<1){",
+                   "$('td:eq('+i+')', row).html(data[i].toExponential(3));",
+                   "}",
+                   "}",
+                   "}"),
+               dom = "Bfrtipl",
+               buttons = c("copy", "csv", "excel", "pdf", "print"),
+               list(pageLength = 10, white_space = "normal")
+           )
+)
 ```
 
 
-### PCA gene expresión {data-width=500}
+### PCA gene expresión 
 
-```{r}
+```{r out.width="800px", out.height="800px"}
 plotPCA(rlog(dds), intgroup = params$variablepca )+
-            theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
-            theme(text = element_text(size=12))
+            #theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
+            theme(text = element_text(size=14))
 ```
 
 
@@ -180,12 +226,21 @@ All together {data-navmenu="Kegg"}
 Row
 ------------------------------------
 
-### text 
+### Kyoto Encyclopedia of Genes and Genomes (KEGG)
 
-```{r}
+KEGG is a database resource for understanding high-level functions and utilities of the biological system, such as the cell, the organism and the ecosystem, from molecular-level information, especially large-scale molecular datasets generated by genome sequencing and other high-throughput experimental technologies.
 
-```
+Especially, KEGG PATHWAY is a collection of manually drawn pathway maps representing our knowledge on the molecular interaction, reaction and relation networks for:
 
+* Metabolism:
+    * Global/overview Carbohydrate Energy Lipid Nucleotide Amino acid Other amino Glycan
+    * Cofactor/vitamin Terpenoid/PK Other secondary metabolite Xenobiotics Chemical structure
+* Genetic Information Processing.
+* Environmental Information Processing.
+* Cellular Processes.
+* Organismal Systems.
+* Human Diseases.
+* Drug Development.
 
 Row 
 ------------------------------------
@@ -193,7 +248,7 @@ Row
 ### tabla {data-width=500}
 
 ```{r echo=FALSE}
-predata <- kegg2DT(kggUp[params$nr, ], genesUp, nrows = length(params$nr))
+predata <- kegg2DT(kggAll, genesall, nrows = NULL)
 datatable2( predata,
             vars = c("genes"),
             escape = FALSE,
@@ -201,34 +256,9 @@ datatable2( predata,
 ```
 
 
-### text1 {data-width=500}
+### Visualization of all pathways {data-width=500}
 
-```{r}
-
-```
-
-Row 
-------------------------------------
-
-### Lorem ipsum {data-width=500}
-
-Lorem ipsum is simply dummy text of the printing and typesetting industry.
-Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,
-when an unknown printer took a galley of type and scrambled it to make a type
-specimen book. It has survived not only five centuries, but also the leap into
-electronic typesetting, remaining essentially unchanged. It was popularised in
-the 1960s with the release of Letraset sheets containing Lorem Ipsum passages,
-and more recently with desktop publishing software like Aldus PageMaker
-including versions of Lorem Ipsum.
-
-* asñlfk
-* sdfs
-* sdfds
-
-### text2 {data-width=500}
-
-Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.
-
+This table here is similar to the previous one, with the pathways instead of GO terms. Also, take a look in the extra option, when you click in the code in blue (mmu00000) for every row, that allows you to access the pathway map in KEGG and highlight in red those genes within the route that have appeared in our list.
 
 Row
 ------------------------------------
@@ -236,13 +266,13 @@ Row
 ### Barplot
 
 ```{r  echo=FALSE}
-plotKegg(enrichdf = kggUp[params$nr,], nrows = length(params$nr) ) 
+plotKegg(enrichdf = kggUp[params$nrall,], nrows = length(params$nrall) ) 
 ```
 
 ### ChorPlot
 
 ```{r echo=FALSE, warning=FALSE}
-chordPlot(kggUp[params$nr, ], nRows = length(params$nr), orderby = "P.DE")
+chordPlot(kggUp[params$nrall, ], nRows = length(params$nrall), orderby = "P.DE")
 ```
 
 Row
@@ -251,7 +281,7 @@ Row
 ### Dotplot
 
 ```{r}
-dotPlotkegg(kggUp[params$nr,], n = length(params$nr))+
+dotPlotkegg(kggUp[params$nrall,], n = length(params$nrall))+
         theme(text = element_text(size=10))
 ```
 
@@ -259,7 +289,7 @@ dotPlotkegg(kggUp[params$nr,], n = length(params$nr))+
 ### Kegg heatmap
 
 ```{r}
-heatmapKegg(kggDTup, params$nr)
+heatmapKegg(kggDTall, params$nrall)
 ```
 
 Row
@@ -268,7 +298,7 @@ Row
 ### Kegg cnetplot
 
 ```{r}
-customCnetKegg(kggUp, params$nr)
+customCnetKegg(kggAll, params$nrall)
 ```
 
 ### 
@@ -297,11 +327,7 @@ Row
 ### tabla {data-width=500}
 
 ```{r echo=FALSE}
-predata <- kegg2DT(kggUp[params$nr, ], genesUp, nrows = length(params$nr))
-datatable2( predata,
-            vars = c("genes"),
-            escape = FALSE,
-            opts = list(pageLength = 10, white_space = "normal"))
+
 ```
 
 
@@ -340,13 +366,13 @@ Row
 ### Barplot
 
 ```{r  echo=FALSE}
-plotKegg(enrichdf = kggUp[params$nr,], nrows = length(params$nr) ) 
+
 ```
 
 ### ChorPlot
 
 ```{r echo=FALSE, warning=FALSE}
-chordPlot(kggUp[params$nr, ], nRows = length(params$nr), orderby = "P.DE")
+
 ```
 
 Row
@@ -363,7 +389,7 @@ dotPlotkegg(kggUp[params$nr,], n = length(params$nr))+
 ### Kegg heatmap
 
 ```{r}
-heatmapKegg(kggDTup, params$nr)
+
 ```
 
 Row
@@ -372,7 +398,7 @@ Row
 ### Kegg cnetplot
 
 ```{r}
-customCnetKegg(kggUp, params$nr)
+
 ```
 
 ### 
@@ -401,11 +427,7 @@ Row
 ### tabla {data-width=500}
 
 ```{r echo=FALSE}
-predata <- kegg2DT(kggUp[params$nr, ], genesUp, nrows = length(params$nr))
-datatable2( predata,
-            vars = c("genes"),
-            escape = FALSE,
-            opts = list(pageLength = 10, white_space = "normal"))
+
 ```
 
 
@@ -444,13 +466,13 @@ Row
 ### Barplot
 
 ```{r  echo=FALSE}
-plotKegg(enrichdf = kggUp[params$nr,], nrows = length(params$nr) ) 
+
 ```
 
 ### ChorPlot
 
 ```{r echo=FALSE, warning=FALSE}
-chordPlot(kggUp[params$nr, ], nRows = length(params$nr), orderby = "P.DE")
+
 ```
 
 Row
@@ -459,15 +481,14 @@ Row
 ### Dotplot
 
 ```{r}
-dotPlotkegg(kggUp[params$nr,], n = length(params$nr))+
-        theme(text = element_text(size=10))
+
 ```
 
 
 ### Kegg heatmap
 
 ```{r}
-heatmapKegg(kggDTup, params$nr)
+
 ```
 
 Row
@@ -476,7 +497,7 @@ Row
 ### Kegg cnetplot
 
 ```{r}
-customCnetKegg(kggUp, params$nr)
+
 ```
 
 ### 
@@ -505,11 +526,7 @@ Row
 ### tabla {data-width=500}
 
 ```{r echo=FALSE}
-predata <- kegg2DT(kggUp[params$nr, ], genesUp, nrows = length(params$nr))
-datatable2( predata,
-            vars = c("genes"),
-            escape = FALSE,
-            opts = list(pageLength = 10, white_space = "normal"))
+
 ```
 
 
@@ -548,13 +565,13 @@ Row
 ### Barplot {data-width=500}
 
 ```{r  echo=FALSE}
-plotKegg(enrichdf = kggUp[params$nr,], nrows = length(params$nr) ) 
+
 ```
 
 ### ChorPlot {data-width=500}
 
 ```{r echo=FALSE, warning=FALSE}
-chordPlot(kggUp[params$nr, ], nRows = length(params$nr), orderby = "P.DE")
+
 ```
 
 Row
@@ -563,15 +580,14 @@ Row
 ### Dotplot {data-width=500}
 
 ```{r}
-dotPlotkegg(kggUp[params$nr,], n = length(params$nr))+
-        theme(text = element_text(size=10))
+
 ```
 
 
 ### Kegg heatmap {data-width=500}
 
 ```{r}
-heatmapKegg(kggDTup, params$nr)
+
 ```
 
 Row

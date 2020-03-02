@@ -10,6 +10,7 @@ library(plotly)
 library(chorddiag)
 library(DESeq2)
 library(fgsea)
+library(shinyalert)
 source("utils.R")
 options(shiny.maxRequestSize = 3000*1024^2)
 
@@ -50,14 +51,13 @@ sidebar <- dashboardSidebar(useShinyalert(),
                               sidebarMenu(
                               menuItem(
                               textInput("author", value="your name...", label = h4("Author report name")
-                                        )),
+                                        ))),
                               sidebarMenu( 
                                 menuItem(
-                                  column(12, align = "center", offset=0, uiOutput("report")))),
+                                  fluidRow(column(12, align = "center", offset=0, uiOutput("report"))))),
                               sidebarMenu(
                                 menuItem(
-                                  column(12, align = "center", offset=0, uiOutput("pdf"))))
-                              )
+                                  fluidRow(column(12, align = "center", offset=0, uiOutput("pdf")))))
                             ))
 ### BODY ###############
 body <- dashboardBody(
@@ -1153,7 +1153,6 @@ server <- function(input, output) {
             # file.copy("gsea.Rds", file.path(tempdir(), "gsea.Rds"), overwrite = TRUE)
             # file.remove("gsea.Rds")
             
-
             nr <- rows()
             nrdown <- rowsdown()
             bpnr <- bprows()
@@ -1164,6 +1163,10 @@ server <- function(input, output) {
             ccnrdown <- ccrowsdown()
             variablepca <- variables()
             gseanr <- gsearow()
+            nrall <- rowsAll()
+            bpnrall <- bprowsall()
+            mfnrall <- mfrowsall()
+            ccnrall <- ccrowsall()
             if(is.null(gseanr)){gseanr <- c(1)}
             if(is.null(nr)){nr <- c(1:10)}
             if(is.null(ccnr)){ccnr <- c(1:10)}
@@ -1173,10 +1176,16 @@ server <- function(input, output) {
             if(is.null(ccnrdown)){ccnrdown <- c(1:10)}
             if(is.null(mfnrdown)){mfnrdown <- c(1:10)}
             if(is.null(bpnrdown)){bpnrdown <- c(1:10)}
+            if(is.null(nrall)){nrall <- c(1:10)}
+            if(is.null(bpnrall)){bpnrall <- c(1:10)}
+            if(is.null(mfnrall)){mfnrall <- c(1:10)}
+            if(is.null(ccnrall)){ccnrall <- c(1:10)}
             if(is.null(variablepca)){variablepca=NULL}
             params <- list(nr=nr, nrdown=nrdown, bpnr=bpnr, bpnrdown=bpnrdown,
                            mfnr=mfnr, mfnrdown=mfnrdown, ccnr=ccnr, ccnrdown=ccnrdown,
-                           variablepca=variablepca, tempdir =tempdir(), gseanr=gseanr, author=author() )
+                           variablepca=variablepca, tempdir =tempdir(),
+                           gseanr=gseanr, author=author(), nrall = nrall,
+                           bpnrall=bpnrall, mfnrall=mfnrall, ccnrall=ccnrall)
             rmarkdown::render(
                 tempReport,
                 output_file = file,

@@ -67,7 +67,7 @@
 | datos    | $dds                            | objeto DESeq importado |
 | gsea     | $gsea                           | objeto GSEA            |
 
-## Variable reactive
+## Variables reactive
 
 | Variable   | contenido                          |
 | ---------- | ---------------------------------- |
@@ -82,6 +82,10 @@
 | ccrowsdown | filas seleccionadas de tableCCdown |
 | variables  | Variables seleccionadas para PCA   |
 | gsearow    | filas seleccionadas para GSEA      |
+| bprowsall  | filas seleccionadas de tableBPall  |
+| mfrowsall  | filas seleccionadas de tableMFall  |
+| ccrowsall  | filas seleccionadas de tableCCall  |
+|            |                                    |
 
 
 
