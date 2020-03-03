@@ -553,7 +553,7 @@ server <- function(input, output) {
         
         go$all <- customGO(data$genesall, species = "Mm")
         saveRDS(go$all, "tmpResources/goAll.Rds")
-        goDT$all <- go2DT(enrichdf = go$all, data = data$genesUp )
+        goDT$all <- go2DT(enrichdf = go$all, data = data$genesall )
         saveRDS(goDT$all, "tmpResources/goDTall.Rds")
         
         go$up <- customGO(data$genesUp, species = "Mm")
@@ -696,7 +696,7 @@ server <- function(input, output) {
       validate(need(rowsAll(), "Select the paths of interest to render HeatMap"))
       validate(need(kggDT$all, ""))
       nr <- rowsAll()
-      heatmapKegg(kggDT$up, nr)
+      heatmapKegg(kggDT$all, nr)
     })
 # KEGG cnet All #################
     output$cnetKeggAll <- renderPlot({
@@ -830,9 +830,9 @@ server <- function(input, output) {
     })
     # GO BP dotplot all ################### 
     output$BPDotall <- renderPlot({
-      validate(need(go$up, "Load file to render dotPlot"))
+      validate(need(go$all, "Load file to render dotPlot"))
       validate(need(bprowsall(), "Select the terms of interest to render DotPlot"))
-      gos <- go$up
+      gos <- go$all
       bpnr <- bprowsall()
       if(is.null(bpnr)){bpnr <- c(1:20)}
       gosBP <- gos[gos$Ont=="BP",]
