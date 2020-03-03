@@ -32,7 +32,6 @@ sidebar <- dashboardSidebar(useShinyalert(),
                               menuItem("Preview dataset",
                                        tabName = "preview",
                                        icon = icon("eye")),
-                              uiOutput("sampleGroup"),
                               menuItem(
                                 "Kegg Enrichment",
                                 tabName = "kegg",
@@ -73,6 +72,7 @@ body <- dashboardBody(
     tabItems(
         # preview tab
         tabItem(tabName = "preview",
+                uiOutput("sampleGroup"),
                 h3("Samples info (colData)"),
                 fluidRow(
                     column(
@@ -565,8 +565,6 @@ server <- function(input, output) {
         saveRDS(go$down, "tmpResources/goDown.Rds")
         goDT$down <- go2DT(enrichdf = go$down, data = data$genesDown )
         saveRDS(goDT$down, "tmpResources/goDTdown.Rds")
-        
-        
     })
   # generate reactive variable ###################
     rowsAll <- reactive({input$tableAll_rows_selected})
@@ -1128,31 +1126,55 @@ server <- function(input, output) {
             file.copy("tmpResources/", tempdir(), overwrite = TRUE, recursive = TRUE)
             do.call(file.remove, list(list.files("tmpResources/", full.names = TRUE)))
             
-            # file.copy("genesUp.Rds", file.path(tempdir(), "genesUp.Rds"), overwrite = TRUE)
-            # file.remove("genesUp.Rds")
-            # file.copy("genesDown.Rds", file.path(tempdir(), "genesDown.Rds"), overwrite = TRUE)
-            # file.remove("genesDown.Rds")
-            # file.copy("kggUp.Rds", file.path(tempdir(), "kggUp.Rds"), overwrite = TRUE)
-            # file.remove("kggUp.Rds")
-            # file.copy("kggDown.Rds", file.path(tempdir(), "kggDown.Rds"), overwrite = TRUE)
-            # file.remove("kggDown.Rds")
-            # file.copy("goDown.Rds", file.path(tempdir(), "goDown.Rds"), overwrite = TRUE)
-            # file.remove("goDown.Rds")
-            # file.copy("goUp.Rds", file.path(tempdir(), "goUp.Rds"), overwrite = TRUE)
-            # file.remove("goUp.Rds")
-            # file.copy("kggDTup.Rds", file.path(tempdir(), "kggDTup.Rds"), overwrite = TRUE)
-            # file.remove("kggDTup.Rds")
-            # file.copy("kggDTdown.Rds", file.path(tempdir(), "kggDTdown.Rds"), overwrite = TRUE)
-            # file.remove("kggDTdown.Rds")
-            # file.copy("goDTup.Rds", file.path(tempdir(), "goDTup.Rds"), overwrite = TRUE)
-            # file.remove("goDTup.Rds")
-            # file.copy("goDTdown.Rds", file.path(tempdir(), "goDTdown.Rds"), overwrite = TRUE)
-            # file.remove("goDTdown.Rds")
-            # file.copy("deseq.Rds", file.path(tempdir(), "deseq.Rds"), overwrite = TRUE)
-            # file.remove("deseq.Rds")
-            # file.copy("gsea.Rds", file.path(tempdir(), "gsea.Rds"), overwrite = TRUE)
-            # file.remove("gsea.Rds")
-            
+            nr <- rows()
+            nrdown <- rowsdown()
+            bpnr <- bprows()
+            mfnr <- mfrows()
+            ccnr <- ccrows()
+            bpnrdown <- bprowsdown()
+            mfnrdown <- mfrowsdown()
+            ccnrdown <- ccrowsdown()
+            variablepca <- variables()
+            gseanr <- gsearow()
+            nrall <- rowsAll()
+            bpnrall <- bprowsall()
+            mfnrall <- mfrowsall()
+            ccnrall <- ccrowsall()
+            if(is.null(gseanr)){gseanr <- c(1)}
+            if(is.null(nr)){nr <- c(1:10)}
+            if(is.null(ccnr)){ccnr <- c(1:10)}
+            if(is.null(mfnr)){mfnr <- c(1:10)}
+            if(is.null(bpnr)){bpnr <- c(1:10)}
+            if(is.null(nrdown)){nrdown <- c(1:10)}
+            if(is.null(ccnrdown)){ccnrdown <- c(1:10)}
+            if(is.null(mfnrdown)){mfnrdown <- c(1:10)}
+            if(is.null(bpnrdown)){bpnrdown <- c(1:10)}
+            if(is.null(nrall)){nrall <- c(1:10)}
+            if(is.null(bpnrall)){bpnrall <- c(1:10)}
+            if(is.null(mfnrall)){mfnrall <- c(1:10)}
+            if(is.null(ccnrall)){ccnrall <- c(1:10)}
+            if(is.null(variablepca)){variablepca=NULL}
+            params <- list(nr=nr, nrdown=nrdown, bpnr=bpnr, bpnrdown=bpnrdown,
+                           mfnr=mfnr, mfnrdown=mfnrdown, ccnr=ccnr, ccnrdown=ccnrdown,
+                           variablepca=variablepca, tempdir =tempdir(),
+                           gseanr=gseanr, author=author(), nrall = nrall,
+                           bpnrall=bpnrall, mfnrall=mfnrall, ccnrall=ccnrall)
+            rmarkdown::render(
+                tempReport,
+                output_file = file,
+                params = params,
+                envir = new.env(parent = globalenv())
+            )
+        } )
+    output$reportpdf <- downloadHandler(
+        # For PDF output, change this to "report.pdf"
+        filename = "report.pdf",
+        content = function(file) {
+            tempReport <- file.path(tempdir(), "pdfReport.Rmd")
+            file.copy("pdfReport.Rmd", tempReport, overwrite = TRUE)
+            file.copy("utils.R", file.path(tempdir(),"utils.R"), overwrite = TRUE)
+            file.copy("tmpResources/", tempdir(), overwrite = TRUE, recursive = TRUE)
+            do.call(file.remove, list(list.files("tmpResources/", full.names = TRUE)))
             nr <- rows()
             nrdown <- rowsdown()
             bpnr <- bprows()
