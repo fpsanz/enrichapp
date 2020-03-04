@@ -98,6 +98,11 @@
 * Añadida y funcional, pestaña kegg: All DE genes
 * Centrado boton download report
 
+03/03/2020: FPS:
+
+* Movido seleccionable de variables al body
+* Primeras pruebas plantilla pdf
+
 ## TODOs
 
 * Hacer all together en GO

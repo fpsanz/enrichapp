@@ -72,7 +72,13 @@ body <- dashboardBody(
     tabItems(
         # preview tab
         tabItem(tabName = "preview",
-                uiOutput("sampleGroup"),
+                fluidRow( 
+                  column(width = 2, uiOutput("sampleGroup")),
+                  column(width = 2, uiOutput("specie")),
+                  column(width = 3, uiOutput("logfc")),
+                  column(width = 3, uiOutput("pval")),
+                  column(width = 2, strong("Click to compute enrichment"), actionButton("runEnrich", "Apply values"))
+                  ) ,
                 h3("Samples info (colData)"),
                 fluidRow(
                     column(
@@ -523,14 +529,19 @@ server <- function(input, output) {
     kggDT <- reactiveValues() # pretabla kegg
     datos <- reactiveValues(dds=NULL) #objetos dds post DESeq()
     gsea <- reactiveValues() # objeto GSEA
-    
+    logfcRange <- reactiveValues() # min y max logfc
+
     
     observeEvent(input$deseqFile, {
-        datos$dds <- readRDS(input$deseqFile$datapath)
-        saveRDS(datos$dds, "tmpResources/dds.Rds")
-        
-        data$genesUp <- getSigUpregulated(datos$dds)
-        data$genesDown <- getSigDownregulated(datos$dds)
+      datos$dds <- readRDS(input$deseqFile$datapath)
+      saveRDS(datos$dds, "tmpResources/dds.Rds")
+      logfcRange$min <- min(results(datos$dds)$log2FoldChange)
+      logfcRange$max <- max(results(datos$dds)$log2FoldChange)
+    })
+    
+    observeEvent(input$runEnrich, {
+        data$genesUp <- getSigUpregulated(datos$dds, pval(), logfc()[2])
+        data$genesDown <- getSigDownregulated(datos$dds, pval(), logfc()[1])
         data$genesall <- rbind(data$genesUp, data$genesDown)
         saveRDS(data$genesall, "tmpResources/genesall.Rds")
         saveRDS(data$genesUp, "tmpResources/genesUp.Rds")
@@ -581,6 +592,10 @@ server <- function(input, output) {
     ccrowsdown <- reactive({input$tableCCdown_rows_selected})
     variables <- reactive({input$variables})
     gsearow <- reactive({input$gseaTable_rows_selected})
+    specie <- reactive({input$specie})
+    pval <- reactive({input$pval})
+    logfc <- reactive({input$logfc})
+    specie <- reactive({input$specie})
 # ui selector sample groups ###################
     output$sampleGroup <- renderUI({
         validate(need(datos$dds, ""))
@@ -592,7 +607,26 @@ server <- function(input, output) {
                     choices = nvars,
                     multiple = TRUE)
     })
-    
+# ui selector specie ####################
+    output$specie <- renderUI({
+      validate(need(datos$dds, ""))
+      selectInput("specie", label = "Select specie",
+                  choices = list("Human" = "Hs", "Mouse"="Mm"), 
+                  selected = "Mm")
+    })
+# ui selector logfc #######################
+    output$logfc <- renderUI({
+      validate(need(datos$dds, ""))
+      sliderInput("logfc", label = "Select logFC range to remove (keep tails)",
+                  min=round(logfcRange$min,3), max=round(logfcRange$max, 3),
+                  value = c(round(logfcRange$min,3),round(logfcRange$max,3) ) )
+    })
+
+# ui selector pval #############################
+    output$pval <- renderUI({
+      validate(need(datos$dds,""))
+      sliderInput("pval", label = "Select pval threshold", min = 0, max=1, value=0.05, step = 0.025 )
+    })
 # preview samples ###################
     output$samples <- DT::renderDataTable(server = TRUE,{
       validate(need(datos$dds, "Load file to render table"))
@@ -620,6 +654,9 @@ server <- function(input, output) {
         conversion <- geneIdConverter(rownames(res))
         res <- round(res,4)
         res <- cbind(`Gene name`=conversion$consensus, res)
+        res <- res[ ((res$log2FoldChange >= logfc()[2] |
+                       res$log2FoldChange< logfc()[1]) &
+                       res$padj <= pval() ),]
         #add_column(res, Symbol=conversion$consensus, .before = "baseMean")
         datatable( res, 
                   filter = list(position="top", clear=FALSE),

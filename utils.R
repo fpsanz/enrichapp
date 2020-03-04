@@ -923,9 +923,9 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
 
 # Función para recuperar los genes up de un objeto DEseq #############
 # actualmente para p-val <= 0.05 fijo.
-getSigUpregulated <- function(dds){
+getSigUpregulated <- function(dds, pval=0.05, logfc=0){
   rk <- as.data.frame(results(dds))
-  rk <- rk[rk$log2FoldChange >0 & rk$pvalue<=0.05,]
+  rk <- rk[rk$log2FoldChange >logfc & rk$padj<=pval,]
   rk <- rk[ order(rk$pvalue, decreasing = TRUE), ]
   annot <- geneIdConverter(rownames(rk))
   return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
@@ -933,9 +933,9 @@ getSigUpregulated <- function(dds){
 
 # Función para recuperar los genes down de un objeto DEseq #############
 # actualmente para p-val <= 0.05 fijo.
-getSigDownregulated <- function(dds){
+getSigDownregulated <- function(dds, pval=0.05, logfc=0){
   rk <- as.data.frame(results(dds))
-  rk <- rk[rk$log2FoldChange <0 & rk$pvalue<=0.05,]
+  rk <- rk[rk$log2FoldChange <logfc & rk$padj<=pval,]
   rk <- rk[ order(rk$pvalue, decreasing = TRUE), ]
   annot <- geneIdConverter(rownames(rk))
   return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
