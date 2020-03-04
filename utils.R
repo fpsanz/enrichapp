@@ -949,8 +949,8 @@ geneIdConverter <- function(genes){ # genes = vector of ensembl gene ids (sólo 
   annot <- NULL
   annot$ENSEMBL <- genes
   annot$SYMBOL <-  mapIds(EnsDb.Mmusculus.v79, keys=genes, column="SYMBOL",keytype="GENEID")
-  annot$SYMBOL1 <- mapIds(org.Mm.eg.db, keys = genes,
-                          column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first') 
+  annot$SYMBOL1 <- mapIds(org.Mm.eg.db, keys = genes, column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first') 
+  annot$description <- mapIds(org.Mm.eg.db, keys = genes, column = 'GENENAME', keytype = 'ENSEMBL', multiVals = 'first')
   annot <- as.data.frame(annot)
   consensus <- data.frame('Symbol'= ifelse(!is.na(annot$SYMBOL), as.vector(annot$SYMBOL),
                                            ifelse(!is.na(annot$SYMBOL1),as.vector(annot$SYMBOL1),
@@ -1014,7 +1014,7 @@ heatmapKegg <- function(kdt, nr){
     xlab(NULL) + ylab(NULL) +
     theme_minimal() +
     theme(panel.grid.major = element_line(colour = "gray88", size = 0.8),
-          axis.text.x=element_text(angle = 90, hjust = 1, vjust = 0.5, size=10))+
+          axis.text.x=element_text(angle = 55, hjust = 1, vjust = 0.5, size=10))+
     # scale_fill_continuous(low="blue", high="red", name = "N")
     # scale_fill_brewer(palette = "YlOrRd")
     scale_fill_manual(values = getPalette(colourCount))+
