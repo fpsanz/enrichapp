@@ -70,7 +70,8 @@ body <- dashboardBody(
     div(
         class = "busy",
         h4("Loading data, please be patient..."),
-        img(src = "dna.gif")
+        img(src = "dna.gif"),
+        style = "z-index: 99; rgba(236, 240, 245, .5)"
     ),
     tabItems(
         # Initial INFO
