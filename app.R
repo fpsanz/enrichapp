@@ -540,7 +540,7 @@ server <- function(input, output) {
     
   observeEvent(input$aboutButton, {
             shinyalert("Enrich app 2020", "Authors:
-            Miriam Riquelme Pérez (correspondence author)
+            Miriam Riquelme Pérez (corresponding author)
             Fernando Pérez Sanz
             For any suggestion or bug, please contact us
             miriam.riquelmep@gmail.com", type="info")})
