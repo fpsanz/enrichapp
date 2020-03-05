@@ -837,7 +837,7 @@ loadGenes <- function(filegenes){
   auxgenes <- genes
 }
 
-# PCA de un objeto DESeq #####################
+  # PCA de un objeto DESeq #####################
 
 plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE){
   # calculate the variance for each gene
@@ -924,7 +924,8 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
 # Función para recuperar los genes up de un objeto DEseq #############
 # actualmente para p-val <= 0.05 fijo.
 getSigUpregulated <- function(dds, pval=0.05, logfc=0){
-  rk <- as.data.frame(results(dds))
+  res.sh <- lfcShrink(dds, coef=2, type="apeglm", res = results(dds))
+  rk <- as.data.frame(res.sh)
   rk <- rk[rk$log2FoldChange >logfc & rk$padj<=pval,]
   rk <- rk[ order(rk$pvalue, decreasing = TRUE), ]
   annot <- geneIdConverter(rownames(rk))
@@ -934,7 +935,8 @@ getSigUpregulated <- function(dds, pval=0.05, logfc=0){
 # Función para recuperar los genes down de un objeto DEseq #############
 # actualmente para p-val <= 0.05 fijo.
 getSigDownregulated <- function(dds, pval=0.05, logfc=0){
-  rk <- as.data.frame(results(dds))
+  res.sh <- lfcShrink(dds, coef=2, type="apeglm", res = results(dds))
+  rk <- as.data.frame(res.sh)
   rk <- rk[rk$log2FoldChange <logfc & rk$padj<=pval,]
   rk <- rk[ order(rk$pvalue, decreasing = TRUE), ]
   annot <- geneIdConverter(rownames(rk))
@@ -1036,11 +1038,12 @@ buildKeggDataset <- function(specie="mmu"){
 # Función para hacer GSEA pathway #################################
 gseaKegg <- function(dds){
   pathwayDataSet <- readRDS("resources/keggDataGSEA.Rds")
-  res <- as.data.frame(results(dds))
-  res <- res[order(res$log2FoldChange, decreasing = TRUE), ]
-  res$ENSEMBL <- rownames(res)
-  geneRank <- geneIdConverter( res$ENSEMBL)
-  resRank <- left_join(res, geneRank, by=c("ENSEMBL"="ENSEMBL"))
+  
+  res.sh <- as.data.frame(lfcShrink(dds, coef=2, type="apeglm", res = results(dds)))
+  res.sh <- res.sh[order(res.sh$log2FoldChange, decreasing = TRUE), ]
+  res.sh$ENSEMBL <- rownames(res.sh)
+  geneRank <- geneIdConverter( res.sh$ENSEMBL)
+  resRank <- left_join(res.sh, geneRank, by=c("ENSEMBL"="ENSEMBL"))
   resRank <- resRank[!is.na(resRank$ENTREZID), c("ENTREZID","log2FoldChange") ]
   vectRank <- resRank$log2FoldChange
   attr(vectRank, "names") <- as.character(resRank$ENTREZID)

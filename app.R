@@ -558,8 +558,11 @@ server <- function(input, output) {
     observeEvent(input$deseqFile, {
       datos$dds <- readRDS(input$deseqFile$datapath)
       saveRDS(datos$dds, "tmpResources/dds.Rds")
-      logfcRange$min <- min(results(datos$dds)$log2FoldChange)
-      logfcRange$max <- max(results(datos$dds)$log2FoldChange)
+      
+      res.sh <- as.data.frame(lfcShrink(datos$dds, coef=2, type="apeglm", res = results(datos$dds)))
+      
+      logfcRange$min <- min(res.sh$log2FoldChange)
+      logfcRange$max <- max(res.sh$log2FoldChange)
     })
     
     observeEvent(input$runEnrich, {
@@ -673,20 +676,19 @@ server <- function(input, output) {
 # preview table ###################
     output$preview <- DT::renderDT(server=TRUE,{
         validate(need(datos$dds, "Load file to render table"))
-        res <- results(datos$dds) 
-        res <- as.data.frame(res) 
-        conversion <- geneIdConverter(rownames(res))
-        res$baseMean <- round(res$baseMean,4)
-        res$lfcSE <- round(res$lfcSE,4)
-        res$log2FoldChange <- round(res$log2FoldChange,4)
-        res <- cbind(`Description`=conversion$description, res)
-        res <- cbind(`GeneName/Symbol`=conversion$consensus, res)
-        res <- res[ ((res$log2FoldChange >= logfc()[2] |
-                       res$log2FoldChange< logfc()[1]) &
-                       res$padj <= padj() ),]
-        res <-  res %>% select(-c(stat,pvalue))
+        res.sh <- as.data.frame(lfcShrink(datos$dds, coef=2, type="apeglm", res = results(datos$dds)))
+        conversion <- geneIdConverter(rownames(res.sh))
+        res.sh$baseMean <- round(res.sh$baseMean,4)
+        res.sh$lfcSE <- round(res.sh$lfcSE,4)
+        res.sh$log2FoldChange <- round(res.sh$log2FoldChange,4)
+        res.sh <- cbind(`Description`=conversion$description, res.sh)
+        res.sh <- cbind(`GeneName/Symbol`=conversion$consensus, res.sh)
+        res.sh <- res.sh[ ((res.sh$log2FoldChange >= logfc()[2] |
+                       res.sh$log2FoldChange< logfc()[1]) &
+                       res.sh$padj <= padj() ),]
+        res.sh <-  res.sh %>% select(-c(pvalue))
         #add_column(res, Symbol=conversion$consensus, .before = "baseMean")
-        datatable( res, extensions = "Buttons",
+        datatable( res.sh, extensions = "Buttons",
                   filter = list(position="top", clear=FALSE),
                   options = list(
                   columnDefs = list(list(orderable = TRUE,
@@ -1156,7 +1158,7 @@ server <- function(input, output) {
       mygsea <- gsea$gsea
       saveRDS(mygsea, "tmpResources/gsea.Rds")
       table <- mygsea@result[mygsea@result$p.adjust<=0.05 ,2:9] %>% 
-        mutate_at(vars(3:7), ~round(., 3))
+        mutate_at(vars(3:7), ~round(., 4))
       DT::datatable( table,
                  rownames=FALSE,
                  filter = list(position="top", clear=FALSE),
