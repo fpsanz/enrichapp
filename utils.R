@@ -655,7 +655,7 @@ go2DT <- function(enrichdf, data, orderby = NULL, nrows = NULL) {
     }
     enrichdf2 <- enrichdf %>%
         mutate(url = paste0("<a href='http://amigo.geneontology.org/amigo/search/bioentity?q=",
-                            go_id,"'>",go_id,"</a>"))
+                            go_id,"' target='_blank'>",go_id,"</a>"))
     CAup <- enrichdf2[, c(1, 2, 3, 4, 5, 7, 8, 9)]
     CAup$genes <- gsub(",", ", ", CAup$genes)
     for (i in seq(1:length(CAup$genes))) {
@@ -761,7 +761,7 @@ kegg2DT <- function(enrichdf, data, orderby = NULL, nrows = NULL) {
         mutate(pathway = limma::strsplit2(enrichdf$pathID, ":")[, 2],
                genesURL = gsub(",", "+", genes)) %>%
         mutate(url = paste0("<a href='https://www.kegg.jp/kegg-bin/show_pathway?",
-        pathway, "/", genesURL, "'>", pathway, "</a>"))
+        pathway, "/", genesURL,"' target='_blank'>", pathway, "</a>"))
     CAup <- enrichdf2[, c(1, 2, 3, 4, 6, 9)]
     CAup$genes <- gsub(",", ", ", CAup$genes)
     for (i in seq(1:length(CAup$genes))) {
@@ -837,7 +837,7 @@ loadGenes <- function(filegenes){
   auxgenes <- genes
 }
 
-  # PCA de un objeto DESeq #####################
+    # PCA de un objeto DESeq #####################
 
 plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE){
   # calculate the variance for each gene

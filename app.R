@@ -71,7 +71,7 @@ body <- dashboardBody(
         class = "busy",
         h4("Loading data, please be patient..."),
         img(src = "dna.gif"),
-        style = "z-index: 99; rgba(236, 240, 245, .5)"
+        style = "z-index: 99; rgba(236, 240, 245, 0.5)"
     ),
     tabItems(
         # Initial INFO
@@ -652,7 +652,7 @@ server <- function(input, output) {
 # ui selector padj #############################
     output$padj <- renderUI({
       validate(need(datos$dds,""))
-      sliderInput("padj", label = "Select p-adjusted threshold", min = 0, max=1, value=0.05, step = 0.025 )
+      sliderInput("padj", label = "Select p-adjusted threshold", min = 0, max=0.2, value=0.05, step = 0.005 )
     })
 # preview samples ###################
     output$samples <- DT::renderDataTable(server = TRUE,{
@@ -687,11 +687,15 @@ server <- function(input, output) {
                        res.sh$log2FoldChange< logfc()[1]) &
                        res.sh$padj <= padj() ),]
         res.sh <-  res.sh %>% select(-c(pvalue))
+        links = paste0("<a href='http://www.ensembl.org/Mus_musculus/Gene/Summary?db=core;g=",
+                            rownames(res.sh),"' target='_blank'>",rownames(res.sh),"</a>")
+        res.sh <- cbind(`GeneName/Ensembl`= links, res.sh)
         #add_column(res, Symbol=conversion$consensus, .before = "baseMean")
-        datatable( res.sh, extensions = "Buttons",
+        datatable( res.sh, extensions = "Buttons", escape = FALSE, 
+                  rownames = FALSE,
                   filter = list(position="top", clear=FALSE),
                   options = list(
-                  columnDefs = list(list(orderable = TRUE,
+                  columnDefs = list(list(orderable = FALSE,
                                          className = "details-control",
                                          targets = 1),
                                     list(className = "dt-right", targets = 1:ncol(res))
@@ -879,6 +883,7 @@ server <- function(input, output) {
       validate(need(goDT$all, "Load file to render table"))
       goDT <- goDT$all 
       names(goDT)[names(goDT) == "level"] <- "Ont.level"
+      goDT$Ont.level = as.integer(goDT$Ont.level) 
       datatable2(goDT[goDT$Ont=="BP",], vars = c("genes"),
                  filter = list(position="top", clear=FALSE),
                  escape = FALSE,
@@ -909,6 +914,7 @@ server <- function(input, output) {
       validate(need(goDT$all, "Load file to render table"))
       goDT <- goDT$all
       names(goDT)[names(goDT) == "level"] <- "Ont.level"
+      goDT$Ont.level = as.integer(goDT$Ont.level) 
       datatable2(goDT[goDT$Ont=="MF",], vars = c("genes"),
                  filter = list(position="top", clear=FALSE),
                  escape = FALSE,
@@ -940,6 +946,7 @@ server <- function(input, output) {
       validate(need(goDT$all, "Load file to render table"))
       goDT <- goDT$all
       names(goDT)[names(goDT) == "level"] <- "Ont.level"
+      goDT$Ont.level = as.integer(goDT$Ont.level) 
       datatable2(goDT[goDT$Ont=="CC",], vars = c("genes"),
                  filter = list(position="top", clear=FALSE),
                  escape = FALSE,
@@ -972,6 +979,7 @@ server <- function(input, output) {
     validate(need(goDT$up, "Load file to render table"))
     goDT <- goDT$up
     names(goDT)[names(goDT) == "level"] <- "Ont.level"
+    goDT$Ont.level = as.integer(goDT$Ont.level) 
     datatable2(goDT[goDT$Ont=="BP",], vars = c("genes"),
                filter = list(position="top", clear=FALSE),
                escape = FALSE,
@@ -1002,6 +1010,7 @@ server <- function(input, output) {
       validate(need(goDT$up, "Load file to render table"))
       goDT <- goDT$up
       names(goDT)[names(goDT) == "level"] <- "Ont.level"
+      goDT$Ont.level = as.integer(goDT$Ont.level) 
       datatable2(goDT[goDT$Ont=="MF",], vars = c("genes"),
                  filter = list(position="top", clear=FALSE),
                  escape = FALSE,
@@ -1033,6 +1042,7 @@ server <- function(input, output) {
       validate(need(goDT$up, "Load file to render table"))
       goDT <- goDT$up
       names(goDT)[names(goDT) == "level"] <- "Ont.level"
+      goDT$Ont.level = as.integer(goDT$Ont.level) 
       datatable2(goDT[goDT$Ont=="CC",], vars = c("genes"),
                  filter = list(position="top", clear=FALSE),
                  escape = FALSE,
@@ -1064,6 +1074,7 @@ server <- function(input, output) {
       validate(need(goDT$down, "Load file to render table"))
       goDT <- goDT$down
       names(goDT)[names(goDT) == "level"] <- "Ont.level"
+      goDT$Ont.level = as.integer(goDT$Ont.level) 
       datatable2(goDT[goDT$Ont=="BP",], vars = c("genes"),
                  filter = list(position="top", clear=FALSE),
                  escape = FALSE,
@@ -1094,6 +1105,7 @@ server <- function(input, output) {
       validate(need(goDT$down, "Load file to render table"))
       goDT <- goDT$down
       names(goDT)[names(goDT) == "level"] <- "Ont.level"
+      goDT$Ont.level = as.integer(goDT$Ont.level) 
       datatable2(goDT[goDT$Ont=="MF",], vars = c("genes"),
                  filter = list(position="top", clear=FALSE),
                  escape = FALSE,
@@ -1125,6 +1137,7 @@ server <- function(input, output) {
       validate(need(goDT$down, "Load file to render table"))
       goDT <- goDT$down
       names(goDT)[names(goDT) == "level"] <- "Ont.level"
+      goDT$Ont.level = as.integer(goDT$Ont.level) 
       datatable2(goDT[goDT$Ont=="CC",], vars = c("genes"),
                  filter = list(position="top", clear=FALSE),
                  escape = FALSE,
