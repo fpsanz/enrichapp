@@ -907,7 +907,7 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
     p <- ggplot(data = d,
                 aes_string(x = "PC1", y = "PC2", color = "group")) +
       geom_point(size = 3) +
-      ggtitle("PCA for VST data transformation") +
+      ggtitle("PCA for transformed data according to variance") +
       xlab(paste0("PC1: ", round(percentVar[1] * 100), "% variance")) +
       ylab(paste0("PC2: ", round(percentVar[2] * 100), "% variance")) +
       scale_color_manual(values = colours, name = intgroup[1]) +

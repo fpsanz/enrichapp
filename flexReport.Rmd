@@ -121,8 +121,8 @@ kggDown <- readRDS( "tmpResources/kggDown.Rds")
 kggDTdown <- readRDS( "tmpResources/kggDTdown.Rds")
 goDown <- readRDS( "tmpResources/goDown.Rds")
 goDTdown <- readRDS( "tmpResources/goDTdown.Rds")
-dds <- readRDS("tmpResources/dds.Rds")
-#gsea <- readRDS("tmpResources/gsea.Rds")
+deseq <- readRDS("tmpResources/dds.Rds")
+gsea <- readRDS("tmpResources/gsea.Rds")
 kggAll <- readRDS( "tmpResources/kggAll.Rds")
 kggDTall <- readRDS( "tmpResources/kggDTall.Rds")
 ```
@@ -148,53 +148,63 @@ Row
 
 ```{r}
 
-metadata <- as.data.frame(colData(dds)) %>% select(-c(sizeFactor,replaceable))
-      datatable( metadata, 
-                 rownames=FALSE,
-                 filter = list(position="top", clear=FALSE),
-                 options = list(
-                   columnDefs = list(list(orderable = FALSE,
-                                          className = "details-control",
-                                          targets = 1),
-                                     list(className = "dt-right", targets = 1:(ncol(metadata)-1))
+metadata <- as.data.frame(colData(deseq)) %>% select(-c(sizeFactor,replaceable))
+
+datatable( metadata, extensions = "Buttons",
+           rownames=FALSE,
+           filter = list(position="top", clear=FALSE),
+           options = list(
+            columnDefs = list(list(orderable = TRUE,
+                  className = "details-control",
+                  targets = 1),
+                  list(className = "dt-right", targets = 1:(ncol(metadata)-1))
                    ),
-                   dom = "Bfrtipl",
-                   buttons = c("copy", "csv", "excel", "pdf", "print"),
-                   list(pageLength = 10, white_space = "normal")
-                 )
-      )
+             dom = "Bfrtipl",
+             buttons = c("copy", "csv", "excel", "pdf", "print"),
+             list(pageLength = 10, white_space = "normal")
+            )
+)
 ```
 
 ### DEseq results {data-width=500}
 
 ```{r results="asis"}
-res <- results(dds)
-res <- as.data.frame(res)
-res <- res[res$padj<=0.05, ]
-conversion <- geneIdConverter(rownames(res))
-res <- round(res,4)
-res <- cbind(`Gene name`=conversion$consensus, res)
-#add_column(res, Symbol=conversion$consensus, .before = "baseMean")
-datatable( res, 
-           filter = list(position="top", clear=FALSE),
-           options = list(
-               columnDefs = list(list(orderable = FALSE,
-                                      className = "details-control",
-                                      targets = 1),
-                                 list(className = "dt-right", targets = 1:ncol(res))
-               ),
-               rowCallback = JS(
-                   "function(row, data) {",
-                   "for (i = 6; i < 8; i++) {",
-                   "if (data[i]>1000 | data[i]<1){",
-                   "$('td:eq('+i+')', row).html(data[i].toExponential(3));",
-                   "}",
-                   "}",
-                   "}"),
-               dom = "Bfrtipl",
-               buttons = c("copy", "csv", "excel", "pdf", "print"),
-               list(pageLength = 10, white_space = "normal")
-           )
+res.sh <- as.data.frame(lfcShrink(deseq, coef=2, type="apeglm", res = results(deseq)))
+conversion <- geneIdConverter(rownames(res.sh))
+res.sh$baseMean <- round(res.sh$baseMean,4)
+res.sh$lfcSE <- round(res.sh$lfcSE,4)
+res.sh$log2FoldChange <- round(res.sh$log2FoldChange,4)
+res.sh <- cbind(`Description`=conversion$description, res.sh)
+res.sh <- cbind(`GeneName/Symbol`=conversion$consensus, res.sh)
+res.sh <- res.sh[ ((res.sh$log2FoldChange >= logfc()[2] |
+       res.sh$log2FoldChange< logfc()[1]) &
+       res.sh$padj <= padj() ),]
+res.sh <-  res.sh %>% select(-c(pvalue))
+links = paste0("<a href='http://www.ensembl.org/Mus_musculus/Gene/Summary?db=core;g=",
+       rownames(res.sh),"' target='_blank'>",rownames(res.sh),"</a>")
+res.sh <- cbind(`GeneName/Ensembl`= links, res.sh)
+
+datatable( res.sh, extensions = "Buttons", escape = FALSE, 
+                  rownames = FALSE,
+                  filter = list(position="top", clear=FALSE),
+                  options = list(
+                  columnDefs = list(list(orderable = FALSE,
+                                         className = "details-control",
+                                         targets = 1),
+                                    list(className = "dt-right", targets = 1:ncol(res))
+                                    ),
+                  rowCallback = JS(
+                                "function(row, data) {",
+                                "for (i = 6; i < 8; i++) {",
+                                "if (data[i]>1000 | data[i]<1){",
+                                "$('td:eq('+i+')', row).html(data[i].toExponential(3));",
+                                "}",
+                                "}",
+                                "}"),
+                  dom = "Bfrtipl",
+                  buttons = c("copy", "csv", "excel", "pdf", "print"),
+                  list(pageLength = 10, white_space = "normal")
+                  )
 )
 ```
 
@@ -204,8 +214,9 @@ Row
 ### Samples PCA gene expression {data-width=100}
 
 ```{r}
-plotPCA(rlog(dds), intgroup = "AAV" )+ #params$variablepca
-            theme(text = element_text(size=14))
+plotPCA(datos$dds, intgroup = 'AAV' )+ #params$variablepca
+            theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
+            theme(text = element_text(size=20))
 ```
 
 
@@ -251,11 +262,15 @@ Row
 ### Kegg Enrichment results --All genes-- {data-width=500}
 
 ```{r echo=FALSE}
-predata <- kegg2DT(kggAll, genesall, nrows = NULL)
-datatable2( predata,
-            vars = c("genes"),
-            escape = FALSE,
-            opts = list(pageLength = 10, white_space = "normal"))
+#predata <- kegg2DT(kggAll, genesall, nrows = NULL)
+kgg <- kgg$all
+    predata <- kggDT$all
+    datatable2(
+      predata,
+      vars = c("genes"),
+      filter = list(position="top", clear=FALSE),
+      escape = FALSE,
+      opts = list(pageLength = 10, white_space = "normal"))
 ```
 
 ### Barplot --all genes-- {data-width=500}
