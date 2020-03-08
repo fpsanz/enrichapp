@@ -891,7 +891,7 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
     #return(d)
   }
   
-  if(length(intgroup)>1){
+ if(length(intgroup)>1){
     p <- ggplot(data = d,
                 aes_string(x = "PC1", y = "PC2", color = "group", shape = "shape")) +
       geom_point(size = 3) +
@@ -900,21 +900,28 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
       ylab(paste0("PC2: ", round(percentVar[2] * 100), "% variance")) +
       scale_color_manual(values = colours, name = intgroup[1]) +
       scale_shape_manual(values = seq_len(length(d$shape)), name=intgroup[2] )+
-      coord_fixed() +
-      ggrepel::geom_text_repel(aes(label = paste("",d$name, sep = ""))) +
+      #coord_fixed() +
+      ggrepel::geom_text_repel(aes(label = paste("",d$name, sep = ""),
+                                   size = "tam"),
+                               show.legend = FALSE, size=3, nudge_y = 0.1) +
+      # scale_size_manual("tam", c(1)) +
       theme(text = element_text(size=20))}
   else{
     p <- ggplot(data = d,
                 aes_string(x = "PC1", y = "PC2", color = "group")) +
       geom_point(size = 3) +
-      ggtitle("PCA for transformed data according to variance") +
+      ggtitle("PCA for VST data transformation") +
       xlab(paste0("PC1: ", round(percentVar[1] * 100), "% variance")) +
       ylab(paste0("PC2: ", round(percentVar[2] * 100), "% variance")) +
       scale_color_manual(values = colours, name = intgroup[1]) +
-      coord_fixed() +
-      ggrepel::geom_text_repel(aes(label = paste("",d$name, sep = ""))) +
+      #coord_fixed() +
+      ggrepel::geom_text_repel(aes(label = paste("",d$name, sep = ""),
+                                   size = "tam"),
+                               show.legend = FALSE, nudge_y = 0.1) +
+      # scale_size_manual(labels = c("tam"), values = c(1)) +
       theme(text = element_text(size=20))
   }
+
   return(p)
 }
 

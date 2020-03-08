@@ -125,13 +125,31 @@ body <- dashboardBody(
               width = 8,
               offset = 2,
               plotOutput("pca", height = "600px")
-            ))
+            )),
+            hr(),
+            fluidRow(column(width = 12,
+                            textAreaInput("biologicalText",
+                                          label="Biological context",
+                                          resize = "both",
+                                          width = "800px"))),
+            hr(),
+            fluidRow(
+                     column(width = 12,
+                            textAreaInput("explainPreview",
+                                          label="Preview explain",
+                                          resize = "both",
+                                          width = "800px")))
     ),
     # kegg tab content
     tabItem(tabName = "kegg",
             tabsetPanel(
               tabPanel(
                 "All DE genes",
+                hr(),
+                fluidRow(column(12, textAreaInput("keggAllText", 
+                                                  label = "Kegg all genes",
+                                                  resize = "both",
+                                                  width = "800px"))), 
                 hr(),
                 h3("All pathways"),
                 fluidRow(
@@ -543,7 +561,9 @@ server <- function(input, output) {
             Miriam Riquelme Pérez (corresponding author)
             Fernando Pérez Sanz
             For any suggestion or bug, please contact us
-            miriam.riquelmep@gmail.com", type="info")})
+            miriam.riquelmep@gmail.com",
+               imageUrl = "dna-svg-small-13.gif", 
+               imageWidth = 200, imageHeight = 100)})
   
   data <- reactiveValues() # genes
   goDT <- reactiveValues() #pretabla GO
@@ -632,6 +652,9 @@ server <- function(input, output) {
   padj <- reactive({input$padj})
   logfc <- reactive({input$logfc})
   specie <- reactive({input$specie})
+  biologicalText <- reactive({input$biologicalText})
+  explainPreview <- reactive({input$explainPreview})
+  keggAllText <- reactive({input$keggAllText})
   # ui selector sample groups ###################
   output$sampleGroup <- renderUI({
     validate(need(datos$dds, ""))
@@ -720,7 +743,8 @@ server <- function(input, output) {
     validate(need(variables(),"Load condition to render PCA" ) )
     plotPCA(datos$dds, intgroup = variables() )+
       theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
-      theme(text = element_text(size=20))
+        scale_size_manual(values = 4) +
+    theme(text = element_text(size=16))
   })
   # KEGG table All #####################################
   output$tableAll <- DT::renderDT(server=TRUE,{
@@ -1213,8 +1237,9 @@ server <- function(input, output) {
       file.copy("flexReport.Rmd", tempReport, overwrite = TRUE)
       file.copy("utils.R", file.path(tempdir(),"utils.R"), overwrite = TRUE)
       file.copy("tmpResources/", tempdir(), overwrite = TRUE, recursive = TRUE)
-      do.call(file.remove, list(list.files("tmpResources/", full.names = TRUE)))
-      
+      file.copy("resources/dna-svg-small-13.gif",
+                file.path(tempdir(), "tmpResources/dna-svg-small-13.gif"), overwrite = TRUE)
+      #do.call(file.remove, list(list.files("tmpResources/", full.names = TRUE)))
       nr <- rows()
       nrdown <- rowsdown()
       bpnr <- bprows()
@@ -1247,7 +1272,9 @@ server <- function(input, output) {
                      mfnr=mfnr, mfnrdown=mfnrdown, ccnr=ccnr, ccnrdown=ccnrdown,
                      variablepca=variablepca, tempdir =tempdir(),
                      gseanr=gseanr, author=author(), nrall = nrall,
-                     bpnrall=bpnrall, mfnrall=mfnrall, ccnrall=ccnrall)
+                     bpnrall=bpnrall, mfnrall=mfnrall, ccnrall=ccnrall,
+                     explainPreview=explainPreview(), biologicalText=biologicalText(),
+                     keggAllText = keggAllText())
       rmarkdown::render(
         tempReport,
         output_file = file,
