@@ -741,7 +741,7 @@ server <- function(input, output) {
   output$pca <- renderPlot( {
     validate(need(datos$dds, "Load file and condition to render PCA"))
     validate(need(variables(),"Load condition to render PCA" ) )
-    plotPCA(datos$dds, intgroup = variables() )+
+    plotPCA(rlog(datos$dds), intgroup = variables() )+
       theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
         scale_size_manual(values = 4) +
     theme(text = element_text(size=16))
