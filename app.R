@@ -102,6 +102,15 @@ body <- dashboardBody(
               column(width = 3, uiOutput("padj")),
               column(width = 2, strong("Click to compute enrichment"), actionButton("runEnrich", "Apply values"))
             ) ,
+            hr(),
+            fluidRow(column(width = 12,
+                            offset = 2,
+                            textAreaInput("biologicalText",
+                                          label="Biological context",
+                                          resize = "both",
+                                          width = "900px",
+                                          height = "200px"))),
+            hr(),
             h3("Samples info (colData)"),
             fluidRow(
               column(
@@ -126,19 +135,14 @@ body <- dashboardBody(
               offset = 2,
               plotOutput("pca", height = "600px")
             )),
-            hr(),
-            fluidRow(column(width = 12,
-                            textAreaInput("biologicalText",
-                                          label="Biological context",
-                                          resize = "both",
-                                          width = "800px"))),
-            hr(),
             fluidRow(
-                     column(width = 12,
-                            textAreaInput("explainPreview",
-                                          label="Preview explain",
-                                          resize = "both",
-                                          width = "800px")))
+                column(width = 12,
+                       offset = 2,
+                    textAreaInput("explainPreview",
+                              label="Preview background",
+                              resize = "both",
+                              width = "800px",
+                              height = "200px"))),
     ),
     # kegg tab content
     tabItem(tabName = "kegg",
@@ -146,10 +150,13 @@ body <- dashboardBody(
               tabPanel(
                 "All DE genes",
                 hr(),
-                fluidRow(column(12, textAreaInput("keggAllText", 
+                fluidRow(column(12,
+                                offset = 2,
+                                textAreaInput("keggAllText", 
                                                   label = "Kegg all genes",
                                                   resize = "both",
-                                                  width = "800px"))), 
+                                                  width = "800px",
+                                                  height = "200px"))), 
                 hr(),
                 h3("All pathways"),
                 fluidRow(
@@ -577,7 +584,7 @@ server <- function(input, output) {
   
   observeEvent(input$deseqFile, {
     datos$dds <- readRDS(input$deseqFile$datapath)
-    saveRDS(datos$dds, "tmpResources/dds.Rds")
+    #saveRDS(datos$dds, "tmpResources/dds.Rds")
     
     res$sh <- as.data.frame(lfcShrink(datos$dds, coef=2, type="apeglm", res = results(datos$dds)))
     conversion <- geneIdConverter(rownames(res$sh))
@@ -599,24 +606,24 @@ server <- function(input, output) {
     data$genesUp <- getSigUpregulated(datos$dds, padj(), logfc()[2])
     data$genesDown <- getSigDownregulated(datos$dds, padj(), logfc()[1])
     data$genesall <- rbind(data$genesUp, data$genesDown)
-    saveRDS(data$genesall, "tmpResources/genesall.Rds")
-    saveRDS(data$genesUp, "tmpResources/genesUp.Rds")
-    saveRDS(data$genesDown, "tmpResources/genesDown.Rds")
+    #saveRDS(data$genesall, "tmpResources/genesall.Rds")
+    #saveRDS(data$genesUp, "tmpResources/genesUp.Rds")
+    #saveRDS(data$genesDown, "tmpResources/genesDown.Rds")
     
     kgg$all <- customKegg(data$genesall, species = "Mm", species.KEGG = "mmu")
-    saveRDS(kgg$all, "tmpResources/kggAll.Rds")
+    #saveRDS(kgg$all, "tmpResources/kggAll.Rds")
     kggDT$all <- kegg2DT(kgg$all, data$genesall)
-    saveRDS(kggDT$all, "tmpResources/kggDTall.Rds")
+    #saveRDS(kggDT$all, "tmpResources/kggDTall.Rds")
     
     kgg$up <- customKegg(data$genesUp, species = "Mm", species.KEGG = "mmu")
-    saveRDS(kgg$up, "tmpResources/kggUp.Rds")
+    #saveRDS(kgg$up, "tmpResources/kggUp.Rds")
     kggDT$up <- kegg2DT(kgg$up, data$genesUp)
-    saveRDS(kggDT$up, "tmpResources/kggDTup.Rds")
+    #saveRDS(kggDT$up, "tmpResources/kggDTup.Rds")
     
     kgg$down <- customKegg(data$genesDown, species = "Mm", species.KEGG = "mmu")
-    saveRDS(kgg$down, "tmpResources/kggDown.Rds")
+    #saveRDS(kgg$down, "tmpResources/kggDown.Rds")
     kggDT$down <- kegg2DT(kgg$down, data$genesDown)
-    saveRDS(kggDT$down, "tmpResources/kggDTdown.Rds")
+    #saveRDS(kggDT$down, "tmpResources/kggDTdown.Rds")
     
     go$all <- customGO(data$genesall, species = "Mm")
     saveRDS(go$all, "tmpResources/goAll.Rds")
@@ -635,17 +642,21 @@ server <- function(input, output) {
   })
   # generate reactive variable ###################
   rowsAll <- reactive({input$tableAll_rows_selected})
-  rows <- reactive({input$table_rows_selected})
+  rowsUp <- reactive({input$table_rows_selected})
+  rowsdown <- reactive({input$tableDown_rows_selected})
+  
   bprowsall <- reactive({input$tableBPall_rows_selected}) 
   mfrowsall <- reactive({input$tableMFall_rows_selected})
   ccrowsall <- reactive({input$tableCCall_rows_selected})
-  bprows <- reactive({input$tableBP_rows_selected})
-  mfrows <- reactive({input$tableMF_rows_selected})
-  ccrows <- reactive({input$tableCC_rows_selected})
-  rowsdown <- reactive({input$tableDown_rows_selected})
+  
+  bprowsup <- reactive({input$tableBP_rows_selected})
+  mfrowsup <- reactive({input$tableMF_rows_selected})
+  ccrowsup <- reactive({input$tableCC_rows_selected})
+  
   bprowsdown <- reactive({input$tableBPdown_rows_selected})
   mfrowsdown <- reactive({input$tableMFdown_rows_selected})
   ccrowsdown <- reactive({input$tableCCdown_rows_selected})
+  
   variables <- reactive({input$variables})
   gsearow <- reactive({input$gseaTable_rows_selected})
   specie <- reactive({input$specie})
@@ -749,10 +760,8 @@ server <- function(input, output) {
   # KEGG table All #####################################
   output$tableAll <- DT::renderDT(server=TRUE,{
     validate(need(kgg$all, "Load file to render table"))
-    kgg <- kgg$all
-    predata <- kggDT$all
     datatable2(
-      predata,
+      kggDT$all, 
       vars = c("genes"),
       filter = list(position="top", clear=FALSE),
       escape = FALSE,
@@ -761,50 +770,43 @@ server <- function(input, output) {
   # KEGG barplot All ################
   output$keggPlotAll <- renderPlotly ({
     validate(need(kgg$all, "Load file to render BarPlot"))
-    kgg <- kgg$all
-    nr <- rowsAll()
-    if(is.null(nr)){nr <- c(1:10)}
-    plotKegg(enrichdf = kgg[nr,], nrows = length(nr))
+    rowsAll <- rowsAll()
+    if(is.null( rowsAll )){ rowsAll <- c(1:10) }
+    plotKegg(enrichdf = kgg$all[rowsAll,], nrows = length(rowsAll ))
   })
   # KEGG chordiag plot All ###############
   output$keggChordAll <- renderChorddiag({
     validate(need(kgg$all, "Load file to render ChordPlot"))
-    kgg <- kgg$all
-    nr <- rowsAll()
-    if(is.null(nr)){nr <- c(1:10)}
-    chordPlot(kgg[nr, ], nRows = length(nr), orderby = "P.DE")
+    rowsAll <- rowsAll()
+    if(is.null(rowsAll)){rowsAll <- c(1:10)}
+    chordPlot(kgg$all[rowsAll, ], nRows = length(rowsAll), orderby = "P.DE")
   })
   # KEGG dotplot All ################### 
   output$keggDotAll <- renderPlot({
     validate(need(kgg$all, "Load file and select to render dotPlot"))
     validate(need(rowsAll(), "Select the paths of interest to render DotPlot"))
-    kgg <- kgg$all
-    nr <- rowsAll()
-    if(is.null(nr)){nr <- c(1:20)}
-    dotPlotkegg(kgg[nr,], n = length(nr))
+    rowsAll <- rowsAll()
+    if(is.null(rowsAll)){rowsAll <- c(1:20)}
+    dotPlotkegg(kgg$all[rowsAll,], n = length(rowsAll))
   })
   # KEGG heatmap All #################
   output$heatmapKeggAll <- renderPlot({
     validate(need(kgg$all, "Load file and select to render Heatmap"))
     validate(need(rowsAll(), "Select the paths of interest to render HeatMap"))
     validate(need(kggDT$all, ""))
-    nr <- rowsAll()
-    heatmapKegg(kggDT$all, nr)
+    heatmapKegg(kggDT$all, rowsAll() ) 
   })
   # KEGG cnet All #################
   output$cnetKeggAll <- renderPlot({
     validate(need(kgg$all, "Load file and select to render Net Plot"))
     validate(need(rowsAll(), "Select the paths of interest to render NetPlot"))
-    nr <- rowsAll()
-    customCnetKegg(kgg$all, nr)
+    customCnetKegg(kgg$all, rowsAll())
   })
   # KEGG table up#####################################
   output$table <- DT::renderDT(server=TRUE,{
     validate(need(kgg$up, "Load file to render table"))
-    kgg <- kgg$up
-    predata <- kggDT$up
     datatable2(
-      predata,
+      kggDT$up,
       vars = c("genes"),
       filter = list(position="top", clear=FALSE),
       escape = FALSE,
@@ -813,51 +815,44 @@ server <- function(input, output) {
   # KEGG barplot up################
   output$keggPlot <- renderPlotly ({
     validate(need(kgg$up, "Load file to render BarPlot"))
-    kgg <- kgg$up
-    nr <- rows()
-    if(is.null(nr)){nr <- c(1:10)}
-    plotKegg(enrichdf = kgg[nr,], nrows = length(nr))
+    rowsUp <- rowsUp()
+    if(is.null(rowsUp)){rowsUp <- c(1:10)}
+    plotKegg(enrichdf = kgg$up[rowsUp,], nrows = length(rowsUp))
   })
   # KEGG chordiag plot up ###############
   output$keggChord <- renderChorddiag({
     validate(need(kgg$up, "Load file to render ChordPlot"))
-    kgg <- kgg$up
-    nr <- rows()
-    if(is.null(nr)){nr <- c(1:10)}
-    chordPlot(kgg[nr, ], nRows = length(nr), orderby = "P.DE")
+    rowsUp<- rowsUp()
+    if(is.null(rowsUp)){rowsUp <- c(1:10)}
+    chordPlot(kgg$up[rowsUp, ], nRows = length(rowsUp), orderby = "P.DE")
   })
   # KEGG dotplot UP ################### 
   output$keggDotUp <- renderPlot({
     validate(need(kgg$up, "Load file and select to render dotPlot"))
-    validate(need(rows(), "Select the paths of interest to render DotPlot"))
-    kgg <- kgg$up
-    nr <- rows()
-    if(is.null(nr)){nr <- c(1:20)}
-    dotPlotkegg(kgg[nr,], n = length(nr))
+    validate(need(rowsUp(), "Select the paths of interest to render DotPlot"))
+    rowsUp <- rowsUp()
+    if(is.null(rowsUp)){rowsUp <- c(1:20)}
+    dotPlotkegg(kgg$up[rowsUp,], n = length(rowsUp))
   })
   # KEGG heatmap Up #################
   output$heatmapKeggUp <- renderPlot({
     validate(need(kgg$up, "Load file and select to render Heatmap"))
-    validate(need(rows(), "Select the paths of interest to render HeatMap"))
+    validate(need(rowsUp(), "Select the paths of interest to render HeatMap"))
     validate(need(kggDT$up, ""))
-    nr <- rows()
-    heatmapKegg(kggDT$up, nr)
+    heatmapKegg(kggDT$up, rowsUp())
   })
   # KEGG cnet Up #################
   output$cnetKeggUp <- renderPlot({
     validate(need(kgg$up, "Load file and select to render Net Plot"))
-    validate(need(rows(), "Select the paths of interest to render NetPlot"))
-    nr <- rows()
-    customCnetKegg(kgg$up, nr)
+    validate(need(rowsUp(), "Select the paths of interest to render NetPlot"))
+    customCnetKegg(kgg$up, rowsUp())
   })
   
   # KEGG table down #####################################
   output$tableDown <- DT::renderDT(server=TRUE,{
     validate(need(kgg$down, "Load file to render table"))
-    kgg <- kgg$down
-    predata <- kggDT$down
     datatable2(
-      predata,
+      kggDT$down,
       vars = c("genes"),
       filter = list(position="top", clear=FALSE),
       escape = FALSE,
@@ -866,41 +861,37 @@ server <- function(input, output) {
   # KEGG barplot down ################
   output$keggPlotDown <- renderPlotly ({
     validate(need(kgg$down, "Load file to render BarPlot"))
-    kgg <- kgg$down
-    nrdown <- rowsdown()
-    if(is.null(nrdown)){nrdown <- c(1:10)}
-    plotKegg(enrichdf = kgg[nrdown,], nrows = length(nrdown))
+    rowsdown <- rowsdown()
+    if(is.null(rowsdown)){rowsdown <- c(1:10)}
+    plotKegg(enrichdf = kgg$down[rowsdown,], nrows = length(rowsdown))
   })
   # KEGG chordiag plot down ###############
   output$keggChordDown <- renderChorddiag({
     validate(need(kgg$down, "Load file to render ChordPlot"))
-    kgg <- kgg$down
-    nrdown <- rowsdown()
-    if(is.null(nrdown)){nrdown <- c(1:10)}
-    chordPlot(kgg[nrdown, ], nRows = length(nrdown), orderby = "P.DE")
+    rowsdown <- rowsdown()
+    if(is.null(rowsdown)){rowsdown <- c(1:10)}
+    chordPlot(kgg$down[rowsdown, ], nRows = length(rowsdown), orderby = "P.DE")
   })
   # KEGG dotplot Down ################### 
   output$keggDotDown <- renderPlot({
     validate(need(kgg$down, "Load file to render DotPlot"))
     validate(need(rowsdown(), "Select the paths of interest to render dotPlot"))
-    kgg <- kgg$down
-    nrdown <- rowsdown()
-    if(is.null(nrdown)){nrdown <- c(1:20)}
-    dotPlotkegg(kgg[nrdown,], n = length(nrdown))
+    rowsdown <- rowsdown()
+    if(is.null(rowsdown)){rowsdown <- c(1:20)}
+    dotPlotkegg(kgg$down[rowsdown,], n = length(rowsdown))
   })
   # KEGG heatmap Down #################
   output$heatmapKeggDown <- renderPlot({
     validate(need(kgg$down, "Load file to render Heatmap"))
     validate(need(rowsdown(), "Select the paths of interest to render Heatmap"))
-    nrdown <- rowsdown()
-    heatmapKegg(kggDT$down, nrdown)
+    heatmapKegg(kggDT$down, rowsdown())
   })
   # KEGG cnet Down #################
   output$cnetKeggDown <- renderPlot({
     validate(need(kgg$down, "Load file to render NetPlot"))
     validate(need(rowsdown(), "Select the paths of interest to render NetPlot"))
-    nrdown <- rowsdown()
-    customCnetKegg(kgg$down, nrdown)
+    rowsdown <- rowsdown()
+    customCnetKegg(kgg$down, rowsdown())
   })
   # GO table BP ALL #####################
   output$tableBPall <- DT::renderDataTable(server=TRUE,{
@@ -917,21 +908,19 @@ server <- function(input, output) {
   # GO plots BP all #####################
   output$plotBPall <- renderPlotly({
     validate(need(go$all, "Load file to render plot"))
-    gos <- go$all
-    bpnr <- bprowsall()
-    if(is.null(bpnr)){bpnr <- c(1:10)}
-    gosBP <- gos[gos$Ont=="BP",]
-    plotGO(enrichdf = gosBP[bpnr, ], nrows = length(bpnr), ont="BP")
+    bprowsall <- bprowsall()
+    if(is.null(bprowsall)){bprowsall <- c(1:10)}
+    gosBP <- go$all[go$all$Ont=="BP",]
+    plotGO(enrichdf = gosBP[bprowsall, ], nrows = length(bprowsall), ont="BP")
   })
   # GO BP dotplot all ################### 
   output$BPDotall <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
     validate(need(bprowsall(), "Select the terms of interest to render DotPlot"))
-    gos <- go$all
-    bpnr <- bprowsall()
-    if(is.null(bpnr)){bpnr <- c(1:20)}
-    gosBP <- gos[gos$Ont=="BP",]
-    dotPlotGO(gosBP[bpnr,], n = length(bpnr))
+    bprowsall <- bprowsall()
+    if(is.null(bprowsall)){bprowsall <- c(1:20)}
+    gosBP <- go$all[go$all$Ont=="BP",]
+    dotPlotGO(gosBP[bprowsall,], n = length(bprowsall))
   })
   # GO table MF all #####################
   output$tableMFall <- DT::renderDataTable({
@@ -949,21 +938,19 @@ server <- function(input, output) {
   # GO plots MF all  #####################
   output$plotMFall <- renderPlotly({
     validate(need(go$all, "Load file to render plot"))
-    gos <- go$all
-    mfnr <- mfrowsall()
-    if(is.null(mfnr)){mfnr <- c(1:10)}
-    gosMF <- gos[gos$Ont=="MF",]
-    plotGO(enrichdf = gosMF[mfnr, ], nrows = length(mfnr), ont = "MF")
+    mfrowsall <- mfrowsall()
+    if(is.null(mfrowsall)){mfrowsall <- c(1:10)}
+    gosMF <- go$all[go$all$Ont=="MF",]
+    plotGO(enrichdf = gosMF[mfrowsall, ], nrows = length(mfrowsall), ont = "MF")
   })
   # GO MF dotplot all ################### 
   output$MFDotall <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
     validate(need(mfrowsall(), "Select the terms of interest to render DotPlot"))
-    gos <- go$all
-    mfnr <- mfrowsall()
-    if(is.null(mfnr)){mfnr <- c(1:20)}
-    gosMF <- gos[gos$Ont=="MF",]
-    dotPlotGO(gosMF[mfnr,], n = length(mfnr))
+    mfrowsall <- mfrowsall()
+    if(is.null(mfrowsall)){mfrowsall <- c(1:20)}
+    gosMF <- go$all[go$all$Ont=="MF",]
+    dotPlotGO(gosMF[mfrowsall,], n = length(mfrowsall))
   })
   # GO table CC all #####################
   output$tableCCall <- DT::renderDataTable(server=TRUE,{
@@ -981,21 +968,19 @@ server <- function(input, output) {
   # GO plots CC all #####################
   output$plotCCall <- renderPlotly({
     validate(need(go$all, "Load file to render plot"))
-    gos <- go$all
-    ccnr <- ccrowsall()
-    if(is.null(ccnr)){ccnr <- c(1:10)}
-    gosCC <- gos[gos$Ont=="CC",]
-    plotGO(enrichdf = gosCC[ccnr,], nrows = length(ccnr), ont="CC")
+    ccrowsall <- ccrowsall()
+    if(is.null(ccrowsall)){ccrowsall <- c(1:10)}
+    gosCC <- go$all[go$all$Ont=="CC",]
+    plotGO(enrichdf = gosCC[ccrowsall,], nrows = length(ccrowsall), ont="CC")
   })
   # GO CC dotplot all ################### 
   output$CCDotall <- renderPlot({
     validate(need(go$all, "Load file to render dotPlot"))
     validate(need(ccrowsall(), "Select the terms of interest to render DotPlot"))
-    gos <- go$all
-    ccnr <- ccrowsall()
-    if(is.null(ccnr)){ccnr <- c(1:20)}
-    gosCC <- gos[gos$Ont=="CC",]
-    dotPlotGO(gosCC[ccnr,], n = length(ccnr))
+    ccrowsall <- ccrowsall()
+    if(is.null(ccrowsall)){ccrowsall <- c(1:20)}
+    gosCC <- go$all[go$all$Ont=="CC",]
+    dotPlotGO(gosCC[ccrowsall,], n = length(ccrowsall))
   })
   
   # GO table BP UP#####################
@@ -1013,21 +998,19 @@ server <- function(input, output) {
   # GO plots BP UP #####################
   output$plotBP <- renderPlotly({
     validate(need(go$up, "Load file to render plot"))
-    gos <- go$up
-    bpnr <- bprows()
-    if(is.null(bpnr)){bpnr <- c(1:10)}
-    gosBP <- gos[gos$Ont=="BP",]
-    plotGO(enrichdf = gosBP[bpnr, ], nrows = length(bpnr), ont="BP")
+    bprowsup <- bprowsup()
+    if(is.null(bprowsup)){bprowsup <- c(1:10)}
+    gosBP <- go$up[go$up$Ont=="BP",]
+    plotGO(enrichdf = gosBP[bprowsup, ], nrows = length(bprowsup), ont="BP")
   })
   # GO BP dotplot up ################### 
   output$BPDotUp <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(bprows(), "Select the terms of interest to render DotPlot"))
-    gos <- go$up
-    bpnr <- bprows()
-    if(is.null(bpnr)){bpnr <- c(1:20)}
-    gosBP <- gos[gos$Ont=="BP",]
-    dotPlotGO(gosBP[bpnr,], n = length(bpnr))
+    validate(need(bprowsup(), "Select the terms of interest to render DotPlot"))
+    bprowsup <- bprowsup()
+    if(is.null(bprowsup)){bprowsup <- c(1:20)}
+    gosBP <- go$up[go$up$Ont=="BP",]
+    dotPlotGO(gosBP[bprowsup,], n = length(bprowsup))
   })
   # GO table MF UP #####################
   output$tableMF <- DT::renderDataTable({
@@ -1045,21 +1028,19 @@ server <- function(input, output) {
   # GO plots MF UP #####################
   output$plotMF <- renderPlotly({
     validate(need(go$up, "Load file to render plot"))
-    gos <- go$up
-    mfnr <- mfrows()
-    if(is.null(mfnr)){mfnr <- c(1:10)}
-    gosMF <- gos[gos$Ont=="MF",]
-    plotGO(enrichdf = gosMF[mfnr, ], nrows = length(mfnr), ont = "MF")
+    mfrowsup <- mfrowsup()
+    if(is.null(mfrowsup)){mfrowsup <- c(1:10)}
+    gosMF <- go$up[go$up$Ont=="MF",]
+    plotGO(enrichdf = gosMF[mfrowsup, ], nrows = length(mfrowsup), ont = "MF")
   })
   # GO MF dotplot up ################### 
   output$MFDotUp <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(mfrows(), "Select the terms of interest to render DotPlot"))
-    gos <- go$up
-    mfnr <- mfrows()
-    if(is.null(mfnr)){mfnr <- c(1:20)}
-    gosMF <- gos[gos$Ont=="MF",]
-    dotPlotGO(gosMF[mfnr,], n = length(mfnr))
+    validate(need(mfrowsup(), "Select the terms of interest to render DotPlot"))
+    mfrowsup <- mfrowsup()
+    if(is.null(mfrowsup)){mfrowsup <- c(1:20)}
+    gosMF <- go$up[go$up$Ont=="MF",]
+    dotPlotGO(gosMF[mfrowsup,], n = length(mfrowsup))
   })
   # GO table CC UP #####################
   output$tableCC <- DT::renderDataTable(server=TRUE,{
@@ -1077,21 +1058,19 @@ server <- function(input, output) {
   # GO plots CC UP #####################
   output$plotCC <- renderPlotly({
     validate(need(go$up, "Load file to render plot"))
-    gos <- go$up
-    ccnr <- ccrows()
-    if(is.null(ccnr)){ccnr <- c(1:10)}
-    gosCC <- gos[gos$Ont=="CC",]
-    plotGO(enrichdf = gosCC[ccnr,], nrows = length(ccnr), ont="CC")
+    ccrowsup <- ccrowsup()
+    if(is.null(ccrowsup)){ccrowsup <- c(1:10)}
+    gosCC <- go$up[go$up$Ont=="CC",]
+    plotGO(enrichdf = gosCC[ccrowsup,], nrows = length(ccrowsup), ont="CC")
   })
   # GO CC dotplot up ################### 
   output$CCDotUp <- renderPlot({
     validate(need(go$up, "Load file to render dotPlot"))
-    validate(need(ccrows(), "Select the terms of interest to render DotPlot"))
-    gos <- go$up
-    ccnr <- ccrows()
-    if(is.null(ccnr)){ccnr <- c(1:20)}
-    gosCC <- gos[gos$Ont=="CC",]
-    dotPlotGO(gosCC[ccnr,], n = length(ccnr))
+    validate(need(ccrowsup(), "Select the terms of interest to render DotPlot"))
+    ccrowsup <- ccrowsup()
+    if(is.null(ccrowsup)){ccrowsup <- c(1:20)}
+    gosCC <- go$up[go$up$Ont=="CC",]
+    dotPlotGO(gosCC[ccrowsup,], n = length(ccrowsup))
   })
   # GO table BP DOWN #####################
   output$tableBPdown <- DT::renderDataTable(server=TRUE,{
@@ -1108,21 +1087,19 @@ server <- function(input, output) {
   # GO plots BP DOWN #####################
   output$plotBPdown <- renderPlotly({
     validate(need(go$down, "Load file to render plot"))
-    gos <- go$down
-    bpnrdown <- bprowsdown()
-    if(is.null(bpnrdown)){bpnrdown <- c(1:10)}
-    gosBP <- gos[gos$Ont=="BP",]
-    plotGO(enrichdf = gosBP[bpnrdown, ], nrows = length(bpnrdown), ont="BP")
+    bprowsdown <- bprowsdown()
+    if(is.null(bprowsdown)){bprowsdown <- c(1:10)}
+    gosBP <- go$down[go$down$Ont=="BP",]
+    plotGO(enrichdf = gosBP[bprowsdown, ], nrows = length(bprowsdown), ont="BP")
   })
   # GO BP dotplot down ################### 
   output$BPDotDown <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
     validate(need(bprowsdown(), "Select the terms of interest to render DotPlot"))
-    gos <- go$down
-    bpnrdown <- bprowsdown()
-    if(is.null(bpnrdown)){bpnrdown <- c(1:20)}
-    gosBP <- gos[gos$Ont=="BP",]
-    dotPlotGO(gosBP[bpnrdown,], n = length(bpnrdown))
+    bprowsdown <- bprowsdown()
+    if(is.null(bprowsdown)){bprowsdown <- c(1:20)}
+    gosBP <- go$down[go$down$Ont=="BP",]
+    dotPlotGO(gosBP[bprowsdown,], n = length(bprowsdown))
   })
   # GO table MF DOWN #####################
   output$tableMFdown <- DT::renderDataTable({
@@ -1140,21 +1117,19 @@ server <- function(input, output) {
   # GO plots MF DOWN #####################
   output$plotMFdown <- renderPlotly({
     validate(need(go$down, "Load file to render plot"))
-    gos <- go$down
-    mfnrdown <- mfrowsdown()
-    if(is.null(mfnrdown)){mfnrdown <- c(1:10)}
-    gosMF <- gos[gos$Ont=="MF",]
-    plotGO(enrichdf = gosMF[mfnrdown, ], nrows = length(mfnrdown), ont = "MF")
+    mfrowsdown <- mfrowsdown()
+    if(is.null(mfrowsdown)){mfrowsdown <- c(1:10)}
+    gosMF <- go$down[go$down$Ont=="MF",]
+    plotGO(enrichdf = gosMF[mfrowsdown, ], nrows = length(mfrowsdown), ont = "MF")
   })
   # GO MF dotplot down ################### 
   output$MFDotDown <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
     validate(need(mfrowsdown(), "Select the terms of interest to render DotPlot"))
-    gos <- go$down
-    mfnrdown <- mfrowsdown()
-    if(is.null(mfnrdown)){mfnrdown <- c(1:20)}
-    gosMF <- gos[gos$Ont=="MF",]
-    dotPlotGO(gosMF[mfnrdown,], n = length(mfnrdown))
+    mfrowsdown <- mfrowsdown()
+    if(is.null(mfrowsdown)){mfrowsdown <- c(1:20)}
+    gosMF <- go$down[go$down$Ont=="MF",]
+    dotPlotGO(gosMF[mfrowsdown,], n = length(mfrowsdown))
   })
   # GO table CC DOWN #####################
   output$tableCCdown <- DT::renderDataTable(server=TRUE,{
@@ -1172,21 +1147,19 @@ server <- function(input, output) {
   # GO plots CC DOWN #####################
   output$plotCCdown <- renderPlotly({
     validate(need(go$down, "Load file to render plot"))
-    gos <- go$down
-    ccnrdown <- ccrowsdown()
-    if(is.null(ccnrdown)){ccnrdown <- c(1:10)}
-    gosCC <- gos[gos$Ont=="CC",]
-    plotGO(enrichdf = gosCC[ccnrdown,], nrows = length(ccnrdown), ont="CC")
+    ccrowsdown <- ccrowsdown()
+    if(is.null(ccrowsdown)){ccrowsdown <- c(1:10)}
+    gosCC <- go$down[go$down$Ont=="CC",]
+    plotGO(enrichdf = gosCC[ccrowsdown,], nrows = length(ccrowsdown), ont="CC")
   })
   # GO CC dotplot down ################### 
   output$CCDotDown <- renderPlot({
     validate(need(go$down, "Load file to render dotPlot"))
     validate(need(ccrowsdown(), "Select the terms of interest to render DotPlot"))
-    gos <- go$down
-    ccnrdown <- ccrowsdown()
-    if(is.null(ccnrdown)){ccnrdown <- c(1:20)}
-    gosCC <- gos[gos$Ont=="CC",]
-    dotPlotGO(gosCC[ccnrdown,], n = length(ccnrdown))
+    ccrowsdown <- ccrowsdown()
+    if(is.null(ccrowsdown)){ccrowsdown <- c(1:20)}
+    gosCC <- go$down[go$down$Ont=="CC",]
+    dotPlotGO(gosCC[ccrowsdown,], n = length(ccrowsdown))
   })
   # GSEA table ##########################
   output$gseaTable <- renderDataTable({
@@ -1240,25 +1213,25 @@ server <- function(input, output) {
       file.copy("resources/dna-svg-small-13.gif",
                 file.path(tempdir(), "tmpResources/dna-svg-small-13.gif"), overwrite = TRUE)
       #do.call(file.remove, list(list.files("tmpResources/", full.names = TRUE)))
-      nr <- rows()
+      nrall <- rowsAll()
+      nrup <- rowsUp()
       nrdown <- rowsdown()
-      bpnr <- bprows()
-      mfnr <- mfrows()
-      ccnr <- ccrows()
+      bpnrup <- bprowsup()
+      mfnrup <- mfrowsup()
+      ccnrup <- ccrowsup()
       bpnrdown <- bprowsdown()
       mfnrdown <- mfrowsdown()
       ccnrdown <- ccrowsdown()
       variablepca <- variables()
       gseanr <- gsearow()
-      nrall <- rowsAll()
       bpnrall <- bprowsall()
       mfnrall <- mfrowsall()
       ccnrall <- ccrowsall()
       if(is.null(gseanr)){gseanr <- c(1)}
-      if(is.null(nr)){nr <- c(1:10)}
-      if(is.null(ccnr)){ccnr <- c(1:10)}
-      if(is.null(mfnr)){mfnr <- c(1:10)}
-      if(is.null(bpnr)){bpnr <- c(1:10)}
+      if(is.null(nrup)){nrup <- c(1:10)}
+      if(is.null(ccnrup)){ccnrup <- c(1:10)}
+      if(is.null(mfnrup)){mfnrup <- c(1:10)}
+      if(is.null(bpnrup)){bpnrup <- c(1:10)}
       if(is.null(nrdown)){nrdown <- c(1:10)}
       if(is.null(ccnrdown)){ccnrdown <- c(1:10)}
       if(is.null(mfnrdown)){mfnrdown <- c(1:10)}
@@ -1268,69 +1241,71 @@ server <- function(input, output) {
       if(is.null(mfnrall)){mfnrall <- c(1:10)}
       if(is.null(ccnrall)){ccnrall <- c(1:10)}
       if(is.null(variablepca)){variablepca=NULL}
-      params <- list(nr=nr, nrdown=nrdown, bpnr=bpnr, bpnrdown=bpnrdown,
-                     mfnr=mfnr, mfnrdown=mfnrdown, ccnr=ccnr, ccnrdown=ccnrdown,
+      params <- list(nrup=nrup, nrdown=nrdown, bpnrup=bpnrup, bpnrdown=bpnrdown,
+                     mfnrup=mfnrup, mfnrdown=mfnrdown, ccnrup=ccnrup, ccnrdown=ccnrdown,
                      variablepca=variablepca, tempdir =tempdir(),
                      gseanr=gseanr, author=author(), nrall = nrall,
                      bpnrall=bpnrall, mfnrall=mfnrall, ccnrall=ccnrall,
                      explainPreview=explainPreview(), biologicalText=biologicalText(),
-                     keggAllText = keggAllText())
+                     keggAllText = keggAllText(), deseq = datos$dds, 
+                     kggAll = kgg$all, kggUp = kgg$up, kggDown = kgg$down,
+                     kggDTall = kggDT$all, kggDTup = kggDT$up, kggDTdown = kggDT$down)
       rmarkdown::render(
         tempReport,
         output_file = file,
         params = params,
-        envir = new.env(parent = globalenv())
+        envir = new.env(parent = globalenv( ))
       )
     } )
-  output$reportpdf <- downloadHandler(
-    # For PDF output, change this to "report.pdf"
-    filename = "report.pdf",
-    content = function(file) {
-      tempReport <- file.path(tempdir(), "pdfReport.Rmd")
-      file.copy("pdfReport.Rmd", tempReport, overwrite = TRUE)
-      file.copy("utils.R", file.path(tempdir(),"utils.R"), overwrite = TRUE)
-      file.copy("tmpResources/", tempdir(), overwrite = TRUE, recursive = TRUE)
-      do.call(file.remove, list(list.files("tmpResources/", full.names = TRUE)))
-      nr <- rows()
-      nrdown <- rowsdown()
-      bpnr <- bprows()
-      mfnr <- mfrows()
-      ccnr <- ccrows()
-      bpnrdown <- bprowsdown()
-      mfnrdown <- mfrowsdown()
-      ccnrdown <- ccrowsdown()
-      variablepca <- variables()
-      gseanr <- gsearow()
-      nrall <- rowsAll()
-      bpnrall <- bprowsall()
-      mfnrall <- mfrowsall()
-      ccnrall <- ccrowsall()
-      if(is.null(gseanr)){gseanr <- c(1)}
-      if(is.null(nr)){nr <- c(1:10)}
-      if(is.null(ccnr)){ccnr <- c(1:10)}
-      if(is.null(mfnr)){mfnr <- c(1:10)}
-      if(is.null(bpnr)){bpnr <- c(1:10)}
-      if(is.null(nrdown)){nrdown <- c(1:10)}
-      if(is.null(ccnrdown)){ccnrdown <- c(1:10)}
-      if(is.null(mfnrdown)){mfnrdown <- c(1:10)}
-      if(is.null(bpnrdown)){bpnrdown <- c(1:10)}
-      if(is.null(nrall)){nrall <- c(1:10)}
-      if(is.null(bpnrall)){bpnrall <- c(1:10)}
-      if(is.null(mfnrall)){mfnrall <- c(1:10)}
-      if(is.null(ccnrall)){ccnrall <- c(1:10)}
-      if(is.null(variablepca)){variablepca=NULL}
-      params <- list(nr=nr, nrdown=nrdown, bpnr=bpnr, bpnrdown=bpnrdown,
-                     mfnr=mfnr, mfnrdown=mfnrdown, ccnr=ccnr, ccnrdown=ccnrdown,
-                     variablepca=variablepca, tempdir =tempdir(),
-                     gseanr=gseanr, author=author(), nrall = nrall,
-                     bpnrall=bpnrall, mfnrall=mfnrall, ccnrall=ccnrall)
-      rmarkdown::render(
-        tempReport,
-        output_file = file,
-        params = params,
-        envir = new.env(parent = globalenv())
-      )
-    } )
+  # output$reportpdf <- downloadHandler(
+  #   # For PDF output, change this to "report.pdf"
+  #   filename = "report.pdf",
+  #   content = function(file) {
+  #     tempReport <- file.path(tempdir(), "pdfReport.Rmd")
+  #     file.copy("pdfReport.Rmd", tempReport, overwrite = TRUE)
+  #     file.copy("utils.R", file.path(tempdir(),"utils.R"), overwrite = TRUE)
+  #     file.copy("tmpResources/", tempdir(), overwrite = TRUE, recursive = TRUE)
+  #     do.call(file.remove, list(list.files("tmpResources/", full.names = TRUE)))
+  #     nrall <- rowsAll()
+  #     nrup <- rowsUp()
+  #     nrdown <- rowsdown()
+  #     if(is.null(nrall)){nrall <- c(1:10)}
+  #     if(is.null(nrup)){nrup <- c(1:10)}
+  #     if(is.null(nrdown)){nrdown <- c(1:10)}
+  #     bpnrall <- bprowsall()
+  #     mfnrall <- mfrowsall()
+  #     ccnrall <- ccrowsall()
+  #     if(is.null(bpnrall)){bpnrall <- c(1:10)}
+  #     if(is.null(mfnrall)){mfnrall <- c(1:10)}
+  #     if(is.null(ccnrall)){ccnrall <- c(1:10)}
+  #     bpnrup <- bprowsup()
+  #     mfnrup <- mfrowsup()
+  #     ccnrup <- ccrowsup()
+  #     if(is.null(bpnrup)){bpnrup <- c(1:10)}
+  #     if(is.null(mfnrup)){mfnrup <- c(1:10)}
+  #     if(is.null(ccnrup)){ccnrup <- c(1:10)}
+  #     bpnrdown <- bprowsdown()
+  #     mfnrdown <- mfrowsdown()
+  #     ccnrdown <- ccrowsdown()
+  #     if(is.null(bpnrdown)){bpnrdown <- c(1:10)}
+  #     if(is.null(mfnrdown)){mfnrdown <- c(1:10)}
+  #     if(is.null(ccnrdown)){ccnrdown <- c(1:10)}
+  #     variablepca <- variables()
+  #     if(is.null(variablepca)){variablepca=NULL}
+  #     gseanr <- gsearow()
+  #     if(is.null(gseanr)){gseanr <- c(1)}
+  #     params <- list(nrup=nrup, nrdown=nrdown, bpnrup=bpnrup, bpnrdown=bpnrdown,
+  #                    mfnrup=mfnrup, mfnrdown=mfnrdown, ccnrup=ccnrup, ccnrdown=ccnrdown,
+  #                    variablepca=variablepca, tempdir =tempdir(),
+  #                    gseanr=gseanr, author=author(), nrall = nrall,
+  #                    bpnrall=bpnrall, mfnrall=mfnrall, ccnrall=ccnrall)
+  #     rmarkdown::render(
+  #       tempReport,
+  #       output_file = file,
+  #       params = params,
+  #       envir = new.env(parent = globalenv())
+  #     )
+  #   } )
 }
 
 

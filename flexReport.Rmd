@@ -6,10 +6,10 @@ output:
         vertical_layout: scroll
         orientation: rows
 params:
-  nr: NA
-  bpnr: NA
-  ccnr: NA
-  mfnr: NA
+  nrup: NA
+  bpnrup: NA
+  ccnrup: NA
+  mfnrup: NA
   nrdown: NA
   bpnrdown: NA
   mfnrdown: NA
@@ -25,6 +25,13 @@ params:
   biologicalText: NA
   explainPreview: NA
   keggAllText: NA
+  deseq: NA
+  kggUp: NA
+  kggAll: NA
+  kggDown: NA
+  kggDTall: NA
+  kggDTdown: NA
+  kggDTup: NA
 ---
 
 ```{r results="asis", echo=FALSE}
@@ -116,18 +123,18 @@ setwd(params$tempdir)
 genesUp <- readRDS( "tmpResources/genesUp.Rds")
 genesDown <- readRDS("tmpResources/genesDown.Rds")
 genesall <- readRDS("tmpResources/kggDTall.Rds")
-kggUp <- readRDS( "tmpResources/kggUp.Rds")
-kggDTup <- readRDS( "tmpResources/kggDTup.Rds")
+#kggUp <- readRDS( "tmpResources/kggUp.Rds")
+#kggDTup <- readRDS( "tmpResources/kggDTup.Rds")
 goUp <- readRDS( "tmpResources/goUp.Rds")
 goDTup <- readRDS( "tmpResources/goDTup.Rds")
-kggDown <- readRDS( "tmpResources/kggDown.Rds")
-kggDTdown <- readRDS( "tmpResources/kggDTdown.Rds")
+#kggDown <- readRDS( "tmpResources/kggDown.Rds")
+#kggDTdown <- readRDS( "tmpResources/kggDTdown.Rds")
 goDown <- readRDS( "tmpResources/goDown.Rds")
 goDTdown <- readRDS( "tmpResources/goDTdown.Rds")
-deseq <- readRDS("tmpResources/dds.Rds")
-gsea <- readRDS("tmpResources/gsea.Rds")
-kggAll <- readRDS( "tmpResources/kggAll.Rds")
-kggDTall <- readRDS( "tmpResources/kggDTall.Rds")
+#deseq <- readRDS("tmpResources/dds.Rds")
+#gsea <- readRDS("tmpResources/gsea.Rds")
+#kggAll <- readRDS( "tmpResources/kggAll.Rds")
+#kggDTall <- readRDS( "tmpResources/kggDTall.Rds")
 ```
 
 
@@ -150,7 +157,7 @@ Row
 ### Metadata experiment {data-width=500}
 
 ```{r}
-    metadata <- as.data.frame(colData(deseq)) %>% select(-c(sizeFactor,replaceable))
+    metadata <- as.data.frame(colData(params$deseq)) %>% select(-c(sizeFactor,replaceable))
     datatable( metadata, extensions = "Buttons",
                rownames=FALSE,
                filter = list(position="top", clear=FALSE),
@@ -170,7 +177,7 @@ Row
 ### DEseq results {data-width=500}
 
 ```{r results="asis"}
-res <- as.data.frame(lfcShrink(deseq, coef=2, type="apeglm", res = results(deseq)))
+res <- as.data.frame(lfcShrink(params$deseq, coef=2, type="apeglm", res = results(params$deseq)))
     conversion <- geneIdConverter(rownames(res))
     res$baseMean <- round(res$baseMean,4)
     res$lfcSE <- round(res$lfcSE,4)
@@ -212,7 +219,7 @@ Row {data-height=500}
 ### Samples PCA gene expression {data-width=100}
 
 ```{r fig.asp=0.5}
-plotPCA(rlog(deseq), intgroup = params$variablepca ) +
+plotPCA(rlog(params$deseq), intgroup = params$variablepca ) +
   theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
   scale_size_manual(values = 4) +
   theme(text = element_text(size=16))
@@ -262,7 +269,7 @@ Row
 ### Kegg Enrichment results --All genes-- {data-width=500}
 
 ```{r echo=FALSE}
-predata <- kggDTall
+predata <- params$kggDTall
 datatable2(
       predata,
       vars = c("genes"),
@@ -274,7 +281,7 @@ datatable2(
 ### Barplot --all genes-- {data-width=500}
 
 ```{r  echo=FALSE}
-plotKegg(enrichdf = kggAll[params$nrall,], nrows = length(params$nrall) ) 
+plotKegg(enrichdf = params$kggAll[params$nrall,], nrows = length(params$nrall) ) 
 ```
 
 Row
@@ -283,14 +290,14 @@ Row
 ### ChorPlot --all genes-- {data-width=500}
 
 ```{r echo=FALSE, warning=FALSE}
-chordPlot(kggAll[params$nrall, ], nRows = length(params$nrall), orderby = "P.DE")
+chordPlot(params$kggAll[params$nrall, ], nRows = length(params$nrall), orderby = "P.DE")
 ```
 
 
 ### Dotplot --all genes-- {data-width=500}
 
 ```{r}
-dotPlotkegg(kggAll[params$nrall,], n = length(params$nrall))+
+dotPlotkegg(params$kggAll[params$nrall,], n = length(params$nrall))+
         theme(text = element_text(size=10))
 ```
 
@@ -300,14 +307,14 @@ Row
 ### Kegg heatmap --all genes-- {data-width=500}
 
 ```{r}
-heatmapKegg(kggDTall, params$nrall)
+heatmapKegg(params$kggDTall, params$nrall)
 ```
 
 
 ### Kegg cnetplot --all genes-- {data-width=500}
 
 ```{r}
-customCnetKegg(kggAll, params$nrall)
+customCnetKegg(params$kggAll, params$nrall)
 ```
 
 
@@ -347,7 +354,7 @@ Row
 
 ```{r echo=FALSE}
 
-predata <- kggDTup
+predata <- params$kggDTup
     datatable2(
       predata,
       vars = c("genes"),
@@ -360,7 +367,7 @@ predata <- kggDTup
 ### Barplot --Upregulated genes-- {data-width=500}
 
 ```{r  echo=FALSE}
-plotKegg(enrichdf = kggUp[params$nr,], nrows = length(params$nr))
+plotKegg(enrichdf = params$kggUp[params$nrup,], nrows = length(params$nrup))
 ```
 
 Row
@@ -369,14 +376,14 @@ Row
 ### ChorPlot --Upregulated genes-- {data-width=500}
 
 ```{r echo=FALSE, warning=FALSE}
-chordPlot(kggUp[params$nr, ], nRows = length(params$nr), orderby = "P.DE")
+chordPlot(params$kggUp[params$nrup, ], nRows = length(params$nrup), orderby = "P.DE")
 ```
 
 
 ### Dotplot --Upregulated genes-- {data-width=500}
 
 ```{r}
-dotPlotkegg(kggUp[params$nr,], n = length(params$nr))
+dotPlotkegg(params$kggUp[params$nrup,], n = length(params$nrup))
 ```
 
 Row
@@ -385,14 +392,14 @@ Row
 ### Kegg heatmap --Upregulated genes-- {data-width=500}
 
 ```{r}
-heatmapKegg(kggDTup, params$nr)
+heatmapKegg(params$kggDTup, params$nrup)
 ```
 
 
 ### Kegg cnetplot --Upregulated genes-- {data-width=500}
 
 ```{r}
-customCnetKegg(kggUp, params$nr)
+customCnetKegg(params$kggUp, params$nrup)
 ```
 
 
@@ -431,7 +438,7 @@ Row
 ### Kegg Enrichment results --Downregulated genes-- {data-width=500}
 
 ```{r echo=FALSE}
-predata <- kggDTdown
+predata <- params$kggDTdown
     datatable2(
       predata,
       vars = c("genes"),
@@ -443,7 +450,7 @@ predata <- kggDTdown
 ### Barplot --Downregulated genes-- {data-width=500}
 
 ```{r  echo=FALSE}
-plotKegg(enrichdf = kggDown[params$nrdown,], nrows = length(params$nrdown))
+plotKegg(enrichdf = params$kggDown[params$nrdown,], nrows = length(params$nrdown))
 ```
 
 Row
@@ -452,14 +459,14 @@ Row
 ### ChorPlot --Downregulated genes-- {data-width=500}
 
 ```{r echo=FALSE, warning=FALSE}
-chordPlot(kggDown[params$nrdown, ], nRows = length(params$nrdown), orderby = "P.DE")
+chordPlot(params$kggDown[params$nrdown, ], nRows = length(params$nrdown), orderby = "P.DE")
 ```
 
 
 ### Dotplot --Downregulated genes-- {data-width=500}
 
 ```{r}
-dotPlotkegg(kggDown[params$nrdown,], n = length(params$nrdown))
+dotPlotkegg(params$kggDown[params$nrdown,], n = length(params$nrdown))
 ```
 
 Row
@@ -468,14 +475,14 @@ Row
 ### Kegg heatmap --Downregulated genes-- {data-width=500}
 
 ```{r}
-heatmapKegg(kggDTdown, params$nrdown)
+heatmapKegg(params$kggDTdown, params$nrdown)
 ```
 
 
 ### Kegg cnetplot --Downregulated genes-- {data-width=500}
 
 ```{r}
-customCnetKegg(kggDown, params$nrdown)
+customCnetKegg(params$kggDown, params$nrdown)
 ```
 
 
