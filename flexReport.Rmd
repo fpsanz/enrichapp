@@ -212,9 +212,10 @@ Row {data-height=500}
 ### Samples PCA gene expression {data-width=100}
 
 ```{r fig.asp=0.5}
-plotPCA(rlog(dds), intgroup = params$variablepca ) +
-  scale_size_manual(values = 3) +
-  theme(text = element_text(size=12))
+plotPCA(rlog(deseq), intgroup = params$variablepca ) +
+  theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
+  scale_size_manual(values = 4) +
+  theme(text = element_text(size=16))
 
 ```
 
@@ -346,12 +347,20 @@ Row
 
 ```{r echo=FALSE}
 
+predata <- kggDTup
+    datatable2(
+      predata,
+      vars = c("genes"),
+      filter = list(position="top", clear=FALSE),
+      escape = FALSE,
+      opts = list(pageLength = 10, white_space = "normal"))
+
 ```
 
 ### Barplot --Upregulated genes-- {data-width=500}
 
 ```{r  echo=FALSE}
-
+plotKegg(enrichdf = kggUp[params$nr,], nrows = length(params$nr))
 ```
 
 Row
@@ -360,14 +369,14 @@ Row
 ### ChorPlot --Upregulated genes-- {data-width=500}
 
 ```{r echo=FALSE, warning=FALSE}
-
+chordPlot(kggUp[params$nr, ], nRows = length(params$nr), orderby = "P.DE")
 ```
 
 
 ### Dotplot --Upregulated genes-- {data-width=500}
 
 ```{r}
-
+dotPlotkegg(kggUp[params$nr,], n = length(params$nr))
 ```
 
 Row
@@ -376,14 +385,14 @@ Row
 ### Kegg heatmap --Upregulated genes-- {data-width=500}
 
 ```{r}
-
+heatmapKegg(kggDTup, params$nr)
 ```
 
 
 ### Kegg cnetplot --Upregulated genes-- {data-width=500}
 
 ```{r}
-
+customCnetKegg(kggUp, params$nr)
 ```
 
 
@@ -422,13 +431,19 @@ Row
 ### Kegg Enrichment results --Downregulated genes-- {data-width=500}
 
 ```{r echo=FALSE}
-
+predata <- kggDTdown
+    datatable2(
+      predata,
+      vars = c("genes"),
+      filter = list(position="top", clear=FALSE),
+      escape = FALSE,
+      opts = list(pageLength = 10, white_space = "normal"))
 ```
 
 ### Barplot --Downregulated genes-- {data-width=500}
 
 ```{r  echo=FALSE}
-
+plotKegg(enrichdf = kggDown[params$nrdown,], nrows = length(params$nrdown))
 ```
 
 Row
@@ -437,14 +452,14 @@ Row
 ### ChorPlot --Downregulated genes-- {data-width=500}
 
 ```{r echo=FALSE, warning=FALSE}
-
+chordPlot(kggDown[params$nrdown, ], nRows = length(params$nrdown), orderby = "P.DE")
 ```
 
 
 ### Dotplot --Downregulated genes-- {data-width=500}
 
 ```{r}
-
+dotPlotkegg(kggDown[params$nrdown,], n = length(params$nrdown))
 ```
 
 Row
@@ -453,56 +468,334 @@ Row
 ### Kegg heatmap --Downregulated genes-- {data-width=500}
 
 ```{r}
-
+heatmapKegg(kggDTdown, params$nrdown)
 ```
 
 
 ### Kegg cnetplot --Downregulated genes-- {data-width=500}
 
 ```{r}
-
+customCnetKegg(kggDown, params$nrdown)
 ```
+
+
+
 
 
 
 Biological Process {data-navmenu="GO all together"}
 =====================================
 
+Row {data-height=250}
+------------------------------------
+
+### Gene Onthology (GO) : Biological process   {data-width=500}
+
+Annotation related to the **biological process (BP)**: The larger processes, or ‘biological programs’ accomplished by multiple molecular activities. Note that a biological process is not equivalent to a pathway. At present, the GO does not try to represent the dynamics or dependencies that would be required to fully describe a pathway.
+
+### Texto variable {data-width=500}
+
+```{r}
+
+```
+
+Row {data-height=250}
+------------------------------------
+
+### GO Enrichment results --All genes-- {data-width=500}
+
+```{r}
+
+```
+
+### GO dotplot --All genes-- {data-width=500}
+
+```{r}
+
+```
+
+
 Molecular function {data-navmenu="GO all together"}
 =====================================
+
+Row {data-height=250}
+------------------------------------
+
+### Gene Onthology (GO) : Molecular function   {data-width=500}
+
+Annotation related to the **molecular function (MF)**: Molecular-level activities performed by gene products. Describe activities that occur at the molecular level, such as “catalysis” or “transport”. GO molecular function terms represent activities rather than the entities (molecules or complexes) that perform the actions, and do not specify where, when, or in what context the action takes place. Molecular functions generally correspond to activities that can be performed by individual gene products (i.e. a protein or RNA), but some activities are performed by molecular complexes composed of multiple gene products.
+
+### Texto variable {data-width=500}
+
+```{r}
+
+```
+
+Row {data-height=250}
+------------------------------------
+
+### GO Enrichment results --All genes-- {data-width=500}
+
+```{r}
+
+```
+
+### GO dotplot --All genes-- {data-width=500}
+
+```{r}
+
+```
+
 
 Cellular component {data-navmenu="GO all together"}
 =====================================
 
+Row {data-height=250}
+------------------------------------
+
+### Gene Onthology (GO) : Cellular component   {data-width=500}
+
+Annotation related to the **celular component (CC)**: The locations relative to cellular structures in which a gene product performs a function, either cellular compartments or stable macromolecular complexes of which they are parts.
+
+### Texto variable {data-width=500}
+
+```{r}
+
+```
+
+Row {data-height=250}
+------------------------------------
+
+### GO Enrichment results --All genes-- {data-width=500}
+
+```{r}
+
+```
+
+### GO dotplot --All genes-- {data-width=500}
+
+```{r}
+
+```
+
+
+
+
 Biological Process {data-navmenu="GO Upregulated"}
 =====================================
+
+Row {data-height=250}
+------------------------------------
+
+### Gene Onthology (GO) : Biological process   {data-width=500}
+
+Annotation related to the **biological process (BP)**: The larger processes, or ‘biological programs’ accomplished by multiple molecular activities. Note that a biological process is not equivalent to a pathway. At present, the GO does not try to represent the dynamics or dependencies that would be required to fully describe a pathway.
+
+### Texto variable {data-width=500}
+
+```{r}
+
+```
+
+Row {data-height=250}
+------------------------------------
+
+### GO Enrichment results --Upregulated genes-- {data-width=500}
+
+```{r}
+
+```
+
+### GO dotplot --Upregulated genes-- {data-width=500}
+
+```{r}
+
+```
+
 
 Molecular function {data-navmenu="GO Upregulated"}
 =====================================
 
+Row {data-height=250}
+------------------------------------
+
+### Gene Onthology (GO) : Molecular function   {data-width=500}
+
+Annotation related to the **molecular function (MF)**: Molecular-level activities performed by gene products. Describe activities that occur at the molecular level, such as “catalysis” or “transport”. GO molecular function terms represent activities rather than the entities (molecules or complexes) that perform the actions, and do not specify where, when, or in what context the action takes place. Molecular functions generally correspond to activities that can be performed by individual gene products (i.e. a protein or RNA), but some activities are performed by molecular complexes composed of multiple gene products.
+
+### Texto variable {data-width=500}
+
+```{r}
+
+```
+
+Row {data-height=250}
+------------------------------------
+
+### GO Enrichment results --Upregulated genes-- {data-width=500}
+
+```{r}
+
+```
+
+### GO dotplot --Upregulated genes-- {data-width=500}
+
+```{r}
+
+```
+
+
 Cellular component {data-navmenu="GO Upregulated"}
 =====================================
+
+Row {data-height=250}
+------------------------------------
+
+### Gene Onthology (GO) : Cellular component   {data-width=500}
+
+Annotation related to the **celular component (CC):** The locations relative to cellular structures in which a gene product performs a function, either cellular compartments or stable macromolecular complexes of which they are parts.
+
+### Texto variable {data-width=500}
+
+```{r}
+
+```
+
+Row {data-height=250}
+------------------------------------
+
+### GO Enrichment results --Upregulated genes-- {data-width=500}
+
+```{r}
+
+```
+
+### GO dotplot --Upregulated genes-- {data-width=500}
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
 
 Biological Process {data-navmenu="GO Downregulated"}
 =====================================
 
+Row {data-height=250}
+------------------------------------
+
+### Gene Onthology (GO) : Biological process   {data-width=500}
+
+Annotation related to the **biological process (BP)**: The larger processes, or ‘biological programs’ accomplished by multiple molecular activities. Note that a biological process is not equivalent to a pathway. At present, the GO does not try to represent the dynamics or dependencies that would be required to fully describe a pathway.
+
+### Texto variable {data-width=500}
+
+```{r}
+
+```
+
+Row {data-height=250}
+------------------------------------
+
+### GO Enrichment results --Downregulated genes-- {data-width=500}
+
+```{r}
+
+```
+
+### GO dotplot --Downregulated genes-- {data-width=500}
+
+```{r}
+
+```
+
+
+
 Molecular function {data-navmenu="GO Downregulated"}
 =====================================
+
+Row {data-height=250}
+------------------------------------
+
+### Gene Onthology (GO) : Molecular function   {data-width=500}
+
+Annotation related to the **molecular function (MF)**: Molecular-level activities performed by gene products. Describe activities that occur at the molecular level, such as “catalysis” or “transport”. GO molecular function terms represent activities rather than the entities (molecules or complexes) that perform the actions, and do not specify where, when, or in what context the action takes place. Molecular functions generally correspond to activities that can be performed by individual gene products (i.e. a protein or RNA), but some activities are performed by molecular complexes composed of multiple gene products.
+
+### Texto variable {data-width=500}
+
+```{r}
+
+```
+
+Row {data-height=250}
+------------------------------------
+
+### GO Enrichment results --Downregulated genes-- {data-width=500}
+
+```{r}
+
+```
+
+### GO dotplot --Downregulated genes-- {data-width=500}
+
+```{r}
+
+```
+
+
 
 Cellular component {data-navmenu="GO Downregulated"}
 =====================================
 
+Row {data-height=250}
+------------------------------------
+
+### Gene Onthology (GO) : Cellular component   {data-width=500}
+
+Annotation related to the **celular component (CC)**: The locations relative to cellular structures in which a gene product performs a function, either cellular compartments or stable macromolecular complexes of which they are parts.
+
+### Texto variable {data-width=500}
+
+```{r}
+
+```
+
+Row {data-height=250}
+------------------------------------
+
+### GO Enrichment results --Downregulated genes-- {data-width=500}
+
+```{r}
+
+```
+
+### GO dotplot --Downregulated genes-- {data-width=500}
+
+```{r}
+
+```
+
+
+
+
 GSEA
 =====================================
+
 
 Row
 -------------------------------------
 
 ### Texto fijo {data-width=500}
 
-```{r}
-
-```
+Gene Set Enrichment Analysis (GSEA) is a computational method that determines whether an a priori defined set of genes shows statistically significant, concordant differences between two biological states (e.g. phenotypes). 
 
 
 ### Texto variable {data-width=500}
