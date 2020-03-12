@@ -32,6 +32,14 @@ params:
   kggDTall: NA
   kggDTdown: NA
   kggDTup: NA
+  goAll: NA
+  goUp: NA
+  goDown: NA
+  goDTall: NA
+  goDTdown: NA
+  goDTup: NA
+  gsea: NA
+  
 ---
 
 ```{r results="asis", echo=FALSE}
@@ -120,17 +128,17 @@ source("utils.R")
 
 ```{r}
 setwd(params$tempdir)
-genesUp <- readRDS( "tmpResources/genesUp.Rds")
-genesDown <- readRDS("tmpResources/genesDown.Rds")
-genesall <- readRDS("tmpResources/kggDTall.Rds")
+#genesUp <- readRDS( "tmpResources/genesUp.Rds")
+#genesDown <- readRDS("tmpResources/genesDown.Rds")
+#genesall <- readRDS("tmpResources/kggDTall.Rds")
 #kggUp <- readRDS( "tmpResources/kggUp.Rds")
 #kggDTup <- readRDS( "tmpResources/kggDTup.Rds")
-goUp <- readRDS( "tmpResources/goUp.Rds")
-goDTup <- readRDS( "tmpResources/goDTup.Rds")
+#goUp <- readRDS( "tmpResources/goUp.Rds")
+#goDTup <- readRDS( "tmpResources/goDTup.Rds")
 #kggDown <- readRDS( "tmpResources/kggDown.Rds")
 #kggDTdown <- readRDS( "tmpResources/kggDTdown.Rds")
-goDown <- readRDS( "tmpResources/goDown.Rds")
-goDTdown <- readRDS( "tmpResources/goDTdown.Rds")
+#goDown <- readRDS( "tmpResources/goDown.Rds")
+#goDTdown <- readRDS( "tmpResources/goDTdown.Rds")
 #deseq <- readRDS("tmpResources/dds.Rds")
 #gsea <- readRDS("tmpResources/gsea.Rds")
 #kggAll <- readRDS( "tmpResources/kggAll.Rds")
@@ -342,7 +350,7 @@ Especially, KEGG PATHWAY is a collection of manually drawn pathway maps represen
 
 ### Upregulated genes {data-width=500}
 
-```{r}
+```{r results='asis'}
 cat("#### Texto variable")
 ```
 

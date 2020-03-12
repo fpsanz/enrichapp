@@ -582,24 +582,32 @@ server <- function(input, output) {
   logfcRange <- reactiveValues() # min y max logfc
   res <- reactiveValues()
   
+  observeEvent(datos$dds, {
+    validate(need(datos$dds, ""))
+    if(!is(datos$dds, "DESeqDataSet") | !("results" %in% mcols(mcols(datos$dds))$type) ){
+      shinyalert("File format error",
+      "File must be a DESeqDataSet class object
+      and you should have run DESeq()", type = "error")} else {
+        res$sh <- as.data.frame(lfcShrink(datos$dds, coef=2, type="apeglm", res = results(datos$dds)))
+        conversion <- geneIdConverter(rownames(res$sh))
+        res$sh$baseMean <- round(res$sh$baseMean,4)
+        res$sh$lfcSE <- round(res$sh$lfcSE,4)
+        res$sh$log2FoldChange <- round(res$sh$log2FoldChange,4)
+        res$sh <- cbind(`Description`=conversion$description, res$sh)
+        res$sh <- cbind(`GeneName/Symbol`=conversion$consensus, res$sh)
+        res$sh <-  res$sh %>% select(-c(pvalue))
+        links = paste0("<a href='http://www.ensembl.org/Mus_musculus/Gene/Summary?db=core;g=",
+                       rownames(res$sh),"' target='_blank'>",rownames(res$sh),"</a>")
+        res$sh <- cbind(`GeneName/Ensembl`= links, res$sh)
+        
+        logfcRange$min <- min(res$sh$log2FoldChange)
+        logfcRange$max <- max(res$sh$log2FoldChange)
+      }
+  })
+  
   observeEvent(input$deseqFile, {
     datos$dds <- readRDS(input$deseqFile$datapath)
     #saveRDS(datos$dds, "tmpResources/dds.Rds")
-    
-    res$sh <- as.data.frame(lfcShrink(datos$dds, coef=2, type="apeglm", res = results(datos$dds)))
-    conversion <- geneIdConverter(rownames(res$sh))
-    res$sh$baseMean <- round(res$sh$baseMean,4)
-    res$sh$lfcSE <- round(res$sh$lfcSE,4)
-    res$sh$log2FoldChange <- round(res$sh$log2FoldChange,4)
-    res$sh <- cbind(`Description`=conversion$description, res$sh)
-    res$sh <- cbind(`GeneName/Symbol`=conversion$consensus, res$sh)
-    res$sh <-  res$sh %>% select(-c(pvalue))
-    links = paste0("<a href='http://www.ensembl.org/Mus_musculus/Gene/Summary?db=core;g=",
-                   rownames(res$sh),"' target='_blank'>",rownames(res$sh),"</a>")
-    res$sh <- cbind(`GeneName/Ensembl`= links, res$sh)
-    
-    logfcRange$min <- min(res$sh$log2FoldChange)
-    logfcRange$max <- max(res$sh$log2FoldChange)
   })
   
   observeEvent(input$runEnrich, {
@@ -626,19 +634,19 @@ server <- function(input, output) {
     #saveRDS(kggDT$down, "tmpResources/kggDTdown.Rds")
     
     go$all <- customGO(data$genesall, species = "Mm")
-    saveRDS(go$all, "tmpResources/goAll.Rds")
+    #saveRDS(go$all, "tmpResources/goAll.Rds")
     goDT$all <- go2DT(enrichdf = go$all, data = data$genesall )
-    saveRDS(goDT$all, "tmpResources/goDTall.Rds")
+    #saveRDS(goDT$all, "tmpResources/goDTall.Rds")
     
     go$up <- customGO(data$genesUp, species = "Mm")
-    saveRDS(go$up, "tmpResources/goUp.Rds")
+    #saveRDS(go$up, "tmpResources/goUp.Rds")
     goDT$up <- go2DT(enrichdf = go$up, data = data$genesUp )
-    saveRDS(goDT$up, "tmpResources/goDTup.Rds")
+    #saveRDS(goDT$up, "tmpResources/goDTup.Rds")
     
     go$down <- customGO(data$genesDown, species = "Mm")
-    saveRDS(go$down, "tmpResources/goDown.Rds")
+    #saveRDS(go$down, "tmpResources/goDown.Rds")
     goDT$down <- go2DT(enrichdf = go$down, data = data$genesDown )
-    saveRDS(goDT$down, "tmpResources/goDTdown.Rds")
+    #saveRDS(goDT$down, "tmpResources/goDTdown.Rds")
   })
   # generate reactive variable ###################
   rowsAll <- reactive({input$tableAll_rows_selected})
@@ -666,6 +674,7 @@ server <- function(input, output) {
   biologicalText <- reactive({input$biologicalText})
   explainPreview <- reactive({input$explainPreview})
   keggAllText <- reactive({input$keggAllText})
+  
   # ui selector sample groups ###################
   output$sampleGroup <- renderUI({
     validate(need(datos$dds, ""))
@@ -1166,7 +1175,7 @@ server <- function(input, output) {
     validate(need(datos$dds, "Load file to render table"))
     gsea$gsea <- gseaKegg(datos$dds)
     mygsea <- gsea$gsea
-    saveRDS(mygsea, "tmpResources/gsea.Rds")
+    #saveRDS(mygsea, "tmpResources/gsea.Rds")
     table <- mygsea@result[mygsea@result$p.adjust<=0.05 ,2:9] %>% 
       mutate_at(vars(3:7), ~round(., 4))
     DT::datatable( table,
@@ -1228,18 +1237,31 @@ server <- function(input, output) {
       mfnrall <- mfrowsall()
       ccnrall <- ccrowsall()
       if(is.null(gseanr)){gseanr <- c(1)}
-      if(is.null(nrup)){nrup <- c(1:10)}
-      if(is.null(ccnrup)){ccnrup <- c(1:10)}
-      if(is.null(mfnrup)){mfnrup <- c(1:10)}
-      if(is.null(bpnrup)){bpnrup <- c(1:10)}
-      if(is.null(nrdown)){nrdown <- c(1:10)}
-      if(is.null(ccnrdown)){ccnrdown <- c(1:10)}
-      if(is.null(mfnrdown)){mfnrdown <- c(1:10)}
-      if(is.null(bpnrdown)){bpnrdown <- c(1:10)}
-      if(is.null(nrall)){nrall <- c(1:10)}
-      if(is.null(bpnrall)){bpnrall <- c(1:10)}
-      if(is.null(mfnrall)){mfnrall <- c(1:10)}
-      if(is.null(ccnrall)){ccnrall <- c(1:10)}
+      if(is.null(nrup)){ nrup <- ( if( dim(kggDT$up)[1]<10) 1:dim(kggDT$up)[1] else c(1:10) ) } 
+      if(is.null(nrall)){ nrall <-  ( if( dim(kggDT$all)[1]<10) 1:dim(kggDT$all)[1] else c(1:10) ) }
+      if(is.null(nrdown)){ nrdown <- ( if( dim(kggDT$down)[1]<10) 1:dim(kggDT$down)[1] else c(1:10) ) }
+      
+      if(is.null(ccnrup)){ ccnrup <- ( if (dim(goDT$up[goDT$up$Ont=="CC", ])[1]<10)
+                                             1:dim(goDT$up[goDT$up$Ont=="CC", ])[1] else c(1:10) ) }
+      if(is.null(mfnrup)){ mfnrup <- ( if (dim(goDT$up[goDT$up$Ont=="MF", ])[1]<10)
+                                             1:dim(goDT$up[goDT$up$Ont=="MF", ])[1] else c(1:10) ) }
+      if(is.null(bpnrup)){ bpnrup <- ( if (dim(goDT$up[goDT$up$Ont=="BP", ])[1]<10)
+                                             1:dim(goDT$up[goDT$up$Ont=="BP", ])[1] else c(1:10) )}
+      
+      if(is.null(ccnrdown)){ccnrdown <- ( if (dim(goDT$down[goDT$down$Ont=="CC", ])[1]<10)
+                                              1:dim(goDT$down[goDT$down$Ont=="CC", ])[1] else c(1:10) ) }
+      if(is.null(mfnrdown)){mfnrdown <- ( if (dim(goDT$down[goDT$down$Ont=="MF", ])[1]<10)
+                                              1:dim(goDT$down[goDT$down$Ont=="MF", ])[1] else c(1:10) ) }
+      if(is.null(bpnrdown)){bpnrdown <- ( if (dim(goDT$down[goDT$down$Ont=="BP", ])[1]<10)
+                                              1:dim(goDT$down[goDT$down$Ont=="BP", ])[1] else c(1:10) )}
+      
+      if(is.null(bpnrall)){bpnrall <- ( if (dim(goDT$all[goDT$all$Ont=="BP", ])[1]<10)
+                                            1:dim(goDT$all[goDT$all$Ont=="BP", ])[1] else c(1:10)) }
+      if(is.null(mfnrall)){mfnrall <- ( if (dim(goDT$all[goDT$all$Ont=="MF", ])[1]<10)
+                                            1:dim(goDT$all[goDT$all$Ont=="MF", ])[1] else c(1:10)) }
+      if(is.null(ccnrall)){ccnrall <- ( if (dim(goDT$all[goDT$all$Ont=="CC", ])[1]<10)
+                                            1:dim(goDT$all[goDT$all$Ont=="CC", ])[1] else c(1:10))}
+      
       if(is.null(variablepca)){variablepca=NULL}
       params <- list(nrup=nrup, nrdown=nrdown, bpnrup=bpnrup, bpnrdown=bpnrdown,
                      mfnrup=mfnrup, mfnrdown=mfnrdown, ccnrup=ccnrup, ccnrdown=ccnrdown,
@@ -1249,7 +1271,9 @@ server <- function(input, output) {
                      explainPreview=explainPreview(), biologicalText=biologicalText(),
                      keggAllText = keggAllText(), deseq = datos$dds, 
                      kggAll = kgg$all, kggUp = kgg$up, kggDown = kgg$down,
-                     kggDTall = kggDT$all, kggDTup = kggDT$up, kggDTdown = kggDT$down)
+                     kggDTall = kggDT$all, kggDTup = kggDT$up, kggDTdown = kggDT$down,
+                     goAll = go$all, goDTall = goDT$all, goUp=go$up, goDTup = goDT$up,
+                     goDown = go$down, goDTdown = goDT$down, gsea = gsea$gsea)
       rmarkdown::render(
         tempReport,
         output_file = file,
