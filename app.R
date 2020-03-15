@@ -70,7 +70,7 @@ body <- dashboardBody(
   div(
     class = "busy",
     h4("Loading data, please be patient..."),
-    img(src = "dna.gif"),
+    img(src = "dna-svg-small-13.gif", style = "width: 150px"),
     style = "z-index: 99; rgba(236, 240, 245, 0.5)"
   ),
   tabItems(
@@ -611,8 +611,8 @@ server <- function(input, output) {
   })
   
   observeEvent(input$runEnrich, {
-    data$genesUp <- getSigUpregulated(datos$dds, padj(), logfc()[2])
-    data$genesDown <- getSigDownregulated(datos$dds, padj(), logfc()[1])
+    data$genesUp <- getSigUpregulated(datos$dds, padj(), logfc()[2]) 
+    data$genesDown <- getSigDownregulated(datos$dds, padj(), logfc()[1]) 
     data$genesall <- rbind(data$genesUp, data$genesDown)
     #saveRDS(data$genesall, "tmpResources/genesall.Rds")
     #saveRDS(data$genesUp, "tmpResources/genesUp.Rds")

@@ -235,7 +235,7 @@ plotPCA(rlog(params$deseq), intgroup = params$variablepca ) +
 ```
 
 
-### Preview explain {data-width=50}
+### Preview background {data-width=50}
 
 ```{r results='asis'}
 cat(params$explainPreview)
@@ -436,7 +436,7 @@ Especially, KEGG PATHWAY is a collection of manually drawn pathway maps represen
 ### Downregulated genes {data-width=500}
 
 ```{r}
-cat("#### Texto variable")
+
 ```
 
 
@@ -508,25 +508,46 @@ Row {data-height=250}
 
 Annotation related to the **biological process (BP)**: The larger processes, or ‘biological programs’ accomplished by multiple molecular activities. Note that a biological process is not equivalent to a pathway. At present, the GO does not try to represent the dynamics or dependencies that would be required to fully describe a pathway.
 
-### Texto variable {data-width=500}
 
-```{r}
-
-```
-
-Row {data-height=250}
+Row {data-height=500}
 ------------------------------------
 
 ### GO Enrichment results --All genes-- {data-width=500}
 
 ```{r}
+goDTall <- params$goDTall
+names(goDTall)[names(goDTall) == "level"] <- "Ont.level"
+    goDTall$Ont.level = as.integer(goDTall$Ont.level) 
+    datatable2(goDTall[goDTall$Ont=="BP",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(pageLength = 10, white_space = "normal")
+    )
+```
+
+### Texto variable {data-width=500}
+
+```{r results='asis'}
+
+
+```
+
+Row {data-height=500}
+------------------------------------
+
+### GO barplot --All genes-- {data-width=500}
+
+```{r}
+gosBP <- params$goAll[params$goAll$Ont == "BP",]
+plotGO(enrichdf = gosBP[params$bpnrall, ], nrows = length(params$bpnrall), ont="BP")
 
 ```
 
 ### GO dotplot --All genes-- {data-width=500}
 
 ```{r}
-
+gosBP <- params$goAll[params$goAll$Ont == "BP",]
+dotPlotGO(gosBP[params$bpnrall,], n = length(params$bpnrall))
 ```
 
 
@@ -540,26 +561,47 @@ Row {data-height=250}
 
 Annotation related to the **molecular function (MF)**: Molecular-level activities performed by gene products. Describe activities that occur at the molecular level, such as “catalysis” or “transport”. GO molecular function terms represent activities rather than the entities (molecules or complexes) that perform the actions, and do not specify where, when, or in what context the action takes place. Molecular functions generally correspond to activities that can be performed by individual gene products (i.e. a protein or RNA), but some activities are performed by molecular complexes composed of multiple gene products.
 
-### Texto variable {data-width=500}
-
-```{r}
-
-```
-
-Row {data-height=250}
+Row {data-height=500}
 ------------------------------------
 
 ### GO Enrichment results --All genes-- {data-width=500}
 
 ```{r}
+goDTall <- params$goDTall
+names(goDTall)[names(goDTall) == "level"] <- "Ont.level"
+    goDTall$Ont.level = as.integer(goDTall$Ont.level) 
+    datatable2(goDTall[goDTall$Ont=="MF",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(pageLength = 10, white_space = "normal")
+    )
+```
+
+### Texto variable {data-width=500}
+
+```{r results='asis'}
+
+
+```
+
+Row {data-height=500}
+------------------------------------
+
+### GO barplot --All genes-- {data-width=500}
+
+```{r}
+gosMF <- params$goAll[params$goAll$Ont == "MF",]
+plotGO(enrichdf = gosMF[params$mfnrall, ], nrows = length(params$mfnrall), ont="MF")
 
 ```
 
 ### GO dotplot --All genes-- {data-width=500}
 
 ```{r}
-
+gosMF <- params$goAll[params$goAll$Ont == "MF",]
+dotPlotGO(gosMF[params$mfnrall,], n = length(params$mfnrall))
 ```
+
 
 
 Cellular component {data-navmenu="GO all together"}
@@ -572,25 +614,45 @@ Row {data-height=250}
 
 Annotation related to the **celular component (CC)**: The locations relative to cellular structures in which a gene product performs a function, either cellular compartments or stable macromolecular complexes of which they are parts.
 
-### Texto variable {data-width=500}
-
-```{r}
-
-```
-
-Row {data-height=250}
+Row {data-height=500}
 ------------------------------------
 
 ### GO Enrichment results --All genes-- {data-width=500}
 
 ```{r}
+goDTall <- params$goDTall
+names(goDTall)[names(goDTall) == "level"] <- "Ont.level"
+    goDTall$Ont.level = as.integer(goDTall$Ont.level) 
+    datatable2(goDTall[goDTall$Ont=="CC",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(pageLength = 10, white_space = "normal")
+    )
+```
+
+### Texto variable {data-width=500}
+
+```{r results='asis'}
+
+
+```
+
+Row {data-height=500}
+------------------------------------
+
+### GO barplot --All genes-- {data-width=500}
+
+```{r}
+gosCC <- params$goAll[params$goAll$Ont == "CC",]
+plotGO(enrichdf = gosCC[params$ccnrall, ], nrows = length(params$ccnrall), ont="CC")
 
 ```
 
 ### GO dotplot --All genes-- {data-width=500}
 
 ```{r}
-
+gosCC <- params$goAll[params$goAll$Ont == "CC",]
+dotPlotGO(gosCC[params$ccnrall,], n = length(params$ccnrall))
 ```
 
 
@@ -606,25 +668,46 @@ Row {data-height=250}
 
 Annotation related to the **biological process (BP)**: The larger processes, or ‘biological programs’ accomplished by multiple molecular activities. Note that a biological process is not equivalent to a pathway. At present, the GO does not try to represent the dynamics or dependencies that would be required to fully describe a pathway.
 
-### Texto variable {data-width=500}
 
-```{r}
-
-```
-
-Row {data-height=250}
+Row {data-height=500}
 ------------------------------------
 
 ### GO Enrichment results --Upregulated genes-- {data-width=500}
 
 ```{r}
+goDTup <- params$goDTup
+names(goDTup)[names(goDTup) == "level"] <- "Ont.level"
+    goDTup$Ont.level = as.integer(goDTup$Ont.level) 
+    datatable2(goDTup[goDTup$Ont=="BP",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(pageLength = 10, white_space = "normal")
+    )
+```
+
+### Texto variable {data-width=500}
+
+```{r results='asis'}
+
+
+```
+
+Row {data-height=500}
+------------------------------------
+
+### GO barplot --Upregulated genes-- {data-width=500}
+
+```{r}
+gosBP <- params$goUp[params$goUp$Ont == "BP",]
+plotGO(enrichdf = gosBP[params$bpnrup, ], nrows = length(params$bpnrup), ont="BP")
 
 ```
 
 ### GO dotplot --Upregulated genes-- {data-width=500}
 
 ```{r}
-
+gosBP <- params$goUp[params$goUp$Ont == "BP",]
+dotPlotGO(gosBP[params$bpnrup,], n = length(params$bpnrup))
 ```
 
 
@@ -638,25 +721,45 @@ Row {data-height=250}
 
 Annotation related to the **molecular function (MF)**: Molecular-level activities performed by gene products. Describe activities that occur at the molecular level, such as “catalysis” or “transport”. GO molecular function terms represent activities rather than the entities (molecules or complexes) that perform the actions, and do not specify where, when, or in what context the action takes place. Molecular functions generally correspond to activities that can be performed by individual gene products (i.e. a protein or RNA), but some activities are performed by molecular complexes composed of multiple gene products.
 
-### Texto variable {data-width=500}
-
-```{r}
-
-```
-
-Row {data-height=250}
+Row {data-height=500}
 ------------------------------------
 
 ### GO Enrichment results --Upregulated genes-- {data-width=500}
 
 ```{r}
+goDTup <- params$goDTup
+names(goDTup)[names(goDTup) == "level"] <- "Ont.level"
+    goDTup$Ont.level = as.integer(goDTup$Ont.level) 
+    datatable2(goDTup[goDTup$Ont=="MF",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(pageLength = 10, white_space = "normal")
+    )
+```
+
+### Texto variable {data-width=500}
+
+```{r results='asis'}
+
+
+```
+
+Row {data-height=500}
+------------------------------------
+
+### GO barplot --Upregulated genes-- {data-width=500}
+
+```{r}
+gosMF <- params$goUp[params$goUp$Ont == "MF",]
+plotGO(enrichdf = gosMF[params$mfnrup, ], nrows = length(params$mfnrup), ont="MF")
 
 ```
 
 ### GO dotplot --Upregulated genes-- {data-width=500}
 
 ```{r}
-
+gosMF <- params$goUp[params$goUp$Ont == "MF",]
+dotPlotGO(gosMF[params$mfnrup,], n = length(params$mfnrup))
 ```
 
 
@@ -670,36 +773,48 @@ Row {data-height=250}
 
 Annotation related to the **celular component (CC):** The locations relative to cellular structures in which a gene product performs a function, either cellular compartments or stable macromolecular complexes of which they are parts.
 
-### Texto variable {data-width=500}
-
-```{r}
-
-```
-
-Row {data-height=250}
+Row {data-height=500}
 ------------------------------------
 
 ### GO Enrichment results --Upregulated genes-- {data-width=500}
 
 ```{r}
+goDTup <- params$goDTup
+names(goDTup)[names(goDTup) == "level"] <- "Ont.level"
+    goDTup$Ont.level = as.integer(goDTup$Ont.level) 
+    datatable2(goDTup[goDTup$Ont=="CC",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(pageLength = 10, white_space = "normal")
+    )
+```
+
+### Texto variable {data-width=500}
+
+```{r results='asis'}
+
+
+```
+
+Row {data-height=500}
+------------------------------------
+
+### GO barplot --Upregulated genes-- {data-width=500}
+
+```{r}
+gosCC <- params$goUp[params$goUp$Ont == "CC",]
+plotGO(enrichdf = gosCC[params$ccnrup, ], nrows = length(params$ccnrup), ont="CC")
 
 ```
 
 ### GO dotplot --Upregulated genes-- {data-width=500}
 
 ```{r}
-
+gosCC <- params$goUp[params$goUp$Ont == "CC",]
+dotPlotGO(gosCC[params$ccnrup,], n = length(params$ccnrup))
 ```
 
-
-
-
-
-
-
-
-
-
+<!-- DownRegulated BP-->
 
 Biological Process {data-navmenu="GO Downregulated"}
 =====================================
@@ -711,27 +826,47 @@ Row {data-height=250}
 
 Annotation related to the **biological process (BP)**: The larger processes, or ‘biological programs’ accomplished by multiple molecular activities. Note that a biological process is not equivalent to a pathway. At present, the GO does not try to represent the dynamics or dependencies that would be required to fully describe a pathway.
 
-### Texto variable {data-width=500}
 
-```{r}
-
-```
-
-Row {data-height=250}
+Row {data-height=500}
 ------------------------------------
 
 ### GO Enrichment results --Downregulated genes-- {data-width=500}
 
 ```{r}
+goDTdown <- params$goDTdown
+names(goDTdown)[names(goDTdown) == "level"] <- "Ont.level"
+    goDTdown$Ont.level = as.integer(goDTdown$Ont.level) 
+    datatable2(goDTdown[goDTdown$Ont=="BP",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(pageLength = 10, white_space = "normal")
+    )
+```
+
+### Texto variable {data-width=500}
+
+```{r results='asis'}
+
+
+```
+
+Row {data-height=500}
+------------------------------------
+
+### GO barplot --Downregulated genes-- {data-width=500}
+
+```{r}
+gosBP <- params$goDown[params$goDown$Ont == "BP",]
+plotGO(enrichdf = gosBP[params$bpnrdown, ], nrows = length(params$bpnrdown), ont="BP")
 
 ```
 
 ### GO dotplot --Downregulated genes-- {data-width=500}
 
 ```{r}
-
+gosBP <- params$goDown[params$goDown$Ont == "BP",]
+dotPlotGO(gosBP[params$bpnrdown,], n = length(params$bpnrdown))
 ```
-
 
 
 Molecular function {data-navmenu="GO Downregulated"}
@@ -744,27 +879,46 @@ Row {data-height=250}
 
 Annotation related to the **molecular function (MF)**: Molecular-level activities performed by gene products. Describe activities that occur at the molecular level, such as “catalysis” or “transport”. GO molecular function terms represent activities rather than the entities (molecules or complexes) that perform the actions, and do not specify where, when, or in what context the action takes place. Molecular functions generally correspond to activities that can be performed by individual gene products (i.e. a protein or RNA), but some activities are performed by molecular complexes composed of multiple gene products.
 
-### Texto variable {data-width=500}
-
-```{r}
-
-```
-
-Row {data-height=250}
+Row {data-height=500}
 ------------------------------------
 
 ### GO Enrichment results --Downregulated genes-- {data-width=500}
 
 ```{r}
+goDTdown <- params$goDTdown
+names(goDTdown)[names(goDTdown) == "level"] <- "Ont.level"
+    goDTdown$Ont.level = as.integer(goDTdown$Ont.level) 
+    datatable2(goDTdown[goDTdown$Ont=="MF",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(pageLength = 10, white_space = "normal")
+    )
+```
+
+### Texto variable {data-width=500}
+
+```{r results='asis'}
+
+
+```
+
+Row {data-height=500}
+------------------------------------
+
+### GO barplot --Downregulated genes-- {data-width=500}
+
+```{r}
+gosMF <- params$goDown[params$goDown$Ont == "MF",]
+plotGO(enrichdf = gosMF[params$mfnrdown, ], nrows = length(params$mfnrdown), ont="MF")
 
 ```
 
 ### GO dotplot --Downregulated genes-- {data-width=500}
 
 ```{r}
-
+gosMF <- params$goDown[params$goDown$Ont == "MF",]
+dotPlotGO(gosMF[params$mfnrdown,], n = length(params$mfnrdown))
 ```
-
 
 
 Cellular component {data-navmenu="GO Downregulated"}
@@ -775,37 +929,55 @@ Row {data-height=250}
 
 ### Gene Onthology (GO) : Cellular component   {data-width=500}
 
-Annotation related to the **celular component (CC)**: The locations relative to cellular structures in which a gene product performs a function, either cellular compartments or stable macromolecular complexes of which they are parts.
+Annotation related to the **celular component (CC):** The locations relative to cellular structures in which a gene product performs a function, either cellular compartments or stable macromolecular complexes of which they are parts.
 
-### Texto variable {data-width=500}
-
-```{r}
-
-```
-
-Row {data-height=250}
+Row {data-height=500}
 ------------------------------------
 
 ### GO Enrichment results --Downregulated genes-- {data-width=500}
 
 ```{r}
+goDTdown <- params$goDTdown
+names(goDTdown)[names(goDTdown) == "level"] <- "Ont.level"
+    goDTdown$Ont.level = as.integer(goDTdown$Ont.level) 
+    datatable2(goDTdown[goDTdown$Ont=="CC",], vars = c("genes"),
+               filter = list(position="top", clear=FALSE),
+               escape = FALSE,
+               opts = list(pageLength = 10, white_space = "normal")
+    )
+```
+
+### Texto variable {data-width=500}
+
+```{r results='asis'}
+
+
+```
+
+Row {data-height=500}
+------------------------------------
+
+### GO barplot --Downregulated genes-- {data-width=500}
+
+```{r}
+gosCC <- params$goDown[params$goDown$Ont == "CC",]
+plotGO(enrichdf = gosCC[params$ccnrdown, ], nrows = length(params$ccnrdown), ont="CC")
 
 ```
 
 ### GO dotplot --Downregulated genes-- {data-width=500}
 
 ```{r}
-
+gosCC <- params$goDown[params$goDown$Ont == "CC",]
+dotPlotGO(gosCC[params$ccnrdown,], n = length(params$ccnrdown))
 ```
-
-
 
 
 GSEA
 =====================================
 
 
-Row
+Row {data-height=250}
 -------------------------------------
 
 ### Texto fijo {data-width=500}
@@ -819,20 +991,35 @@ Gene Set Enrichment Analysis (GSEA) is a computational method that determines wh
 
 ```
 
-Row
+Row {data-height=500}
 ------------------------------------
 
 ### GSEA  results {data-width=500}
 
 ```{r}
-
+mygsea <- params$gsea
+table <- mygsea@result[mygsea@result$p.adjust<=0.05 ,2:9] %>% 
+      mutate_at(vars(3:7), ~round(., 4))
+    DT::datatable( table,
+                   rownames=FALSE,
+                   filter = list(position="top", clear=FALSE),
+                   options = list(
+                     columnDefs = list(list(orderable = FALSE,
+                                            className = "details-control",
+                                            targets = 1)
+                     ),
+                     dom = "Bfrtipl",
+                     buttons = c("copy", "csv", "excel", "pdf", "print"),
+                     list(pageLength = 10, white_space = "normal")
+                   )
+    )
 ```
 
 
 ### Plot GSEA {data-width=500}
 
 ```{r}
-
+enrichplot::gseaplot2(params$gsea, geneSetID = params$gseanr, pvalue_table = TRUE, ES_geom = "line")
 ```
 
 About
