@@ -931,10 +931,10 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
 # Función para recuperar los genes up de un objeto DEseq #############
 # actualmente para p-val <= 0.05 fijo.
 getSigUpregulated <- function(dds, pval=0.05, logfc=0){
-  res.sh <- lfcShrink(dds, coef=2, type="apeglm", res = results(dds))
+  #res.sh <- lfcShrink(dds, coef=2, type="apeglm", res = results(dds))
   rk <- as.data.frame(res.sh)
   rk <- rk[rk$log2FoldChange >logfc & rk$padj<=pval,]
-  rk <- rk[ order(rk$pvalue, decreasing = TRUE), ]
+  rk <- rk[ order(rk$padj, decreasing = TRUE), ]
   annot <- geneIdConverter(rownames(rk))
   return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
 }
@@ -942,10 +942,10 @@ getSigUpregulated <- function(dds, pval=0.05, logfc=0){
 # Función para recuperar los genes down de un objeto DEseq #############
 # actualmente para p-val <= 0.05 fijo.
 getSigDownregulated <- function(dds, pval=0.05, logfc=0){
-  res.sh <- lfcShrink(dds, coef=2, type="apeglm", res = results(dds))
+  #res.sh <- lfcShrink(dds, coef=2, type="apeglm", res = results(dds))
   rk <- as.data.frame(res.sh)
   rk <- rk[rk$log2FoldChange <logfc & rk$padj<=pval,]
-  rk <- rk[ order(rk$pvalue, decreasing = TRUE), ]
+  rk <- rk[ order(rk$padj, decreasing = TRUE), ]
   annot <- geneIdConverter(rownames(rk))
   return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
 }
@@ -1023,11 +1023,11 @@ heatmapKegg <- function(kdt, nr){
     xlab(NULL) + ylab(NULL) +
     theme_minimal() +
     theme(panel.grid.major = element_line(colour = "gray88", size = 0.8),
-          axis.text.x=element_text(angle = 55, hjust = 1, vjust = 0.5, size=10))+
+          axis.text.x=element_text(angle = 90, hjust = 1, vjust = 0.5, size=10))+
     # scale_fill_continuous(low="blue", high="red", name = "N")
     # scale_fill_brewer(palette = "YlOrRd")
     scale_fill_manual(values = getPalette(colourCount))+
-    theme(text = element_text(size=16, angle=0))
+    theme(text = element_text(size=16, angle=0), plot.margin = unit(c(15,25,15,15), "pt"))
   
 }
 

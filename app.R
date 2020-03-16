@@ -607,46 +607,32 @@ server <- function(input, output) {
   
   observeEvent(input$deseqFile, {
     datos$dds <- readRDS(input$deseqFile$datapath)
-    #saveRDS(datos$dds, "tmpResources/dds.Rds")
   })
   
   observeEvent(input$runEnrich, {
     data$genesUp <- getSigUpregulated(datos$dds, padj(), logfc()[2]) 
     data$genesDown <- getSigDownregulated(datos$dds, padj(), logfc()[1]) 
     data$genesall <- rbind(data$genesUp, data$genesDown)
-    #saveRDS(data$genesall, "tmpResources/genesall.Rds")
-    #saveRDS(data$genesUp, "tmpResources/genesUp.Rds")
-    #saveRDS(data$genesDown, "tmpResources/genesDown.Rds")
     
     kgg$all <- customKegg(data$genesall, species = "Mm", species.KEGG = "mmu")
-    #saveRDS(kgg$all, "tmpResources/kggAll.Rds")
     kggDT$all <- kegg2DT(kgg$all, data$genesall)
-    #saveRDS(kggDT$all, "tmpResources/kggDTall.Rds")
     
     kgg$up <- customKegg(data$genesUp, species = "Mm", species.KEGG = "mmu")
-    #saveRDS(kgg$up, "tmpResources/kggUp.Rds")
     kggDT$up <- kegg2DT(kgg$up, data$genesUp)
-    #saveRDS(kggDT$up, "tmpResources/kggDTup.Rds")
+    
     
     kgg$down <- customKegg(data$genesDown, species = "Mm", species.KEGG = "mmu")
-    #saveRDS(kgg$down, "tmpResources/kggDown.Rds")
     kggDT$down <- kegg2DT(kgg$down, data$genesDown)
-    #saveRDS(kggDT$down, "tmpResources/kggDTdown.Rds")
     
     go$all <- customGO(data$genesall, species = "Mm")
-    #saveRDS(go$all, "tmpResources/goAll.Rds")
     goDT$all <- go2DT(enrichdf = go$all, data = data$genesall )
-    #saveRDS(goDT$all, "tmpResources/goDTall.Rds")
     
     go$up <- customGO(data$genesUp, species = "Mm")
-    #saveRDS(go$up, "tmpResources/goUp.Rds")
     goDT$up <- go2DT(enrichdf = go$up, data = data$genesUp )
-    #saveRDS(goDT$up, "tmpResources/goDTup.Rds")
     
     go$down <- customGO(data$genesDown, species = "Mm")
-    #saveRDS(go$down, "tmpResources/goDown.Rds")
     goDT$down <- go2DT(enrichdf = go$down, data = data$genesDown )
-    #saveRDS(goDT$down, "tmpResources/goDTdown.Rds")
+    
   })
   # generate reactive variable ###################
   rowsAll <- reactive({input$tableAll_rows_selected})
