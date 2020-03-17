@@ -11,6 +11,8 @@ library(chorddiag)
 library(DESeq2)
 library(fgsea)
 library(shinyalert)
+library(shinyBS)
+library(shinyWidgets)
 source("utils.R")
 options(shiny.maxRequestSize = 3000*1024^2)
 
@@ -27,7 +29,7 @@ sidebar <- dashboardSidebar(useShinyalert(),
                               menuItem(
                                 fileInput("deseqFile",
                                           "Choose RDS with DESeq object",
-                                          placeholder = "RDS DESeq"))),
+                                          placeholder = "RDS DESeq", accept = ".Rds"))),
                             sidebarMenu(
                               menuItem("App Information",
                                        tabName = "info",
@@ -73,6 +75,7 @@ body <- dashboardBody(
     img(src = "dna-svg-small-13.gif", style = "width: 150px"),
     style = "z-index: 99; rgba(236, 240, 245, 0.5)"
   ),
+  bsAlert("alert"),
   tabItems(
     # Initial INFO
     tabItem(tabName = "info",
@@ -103,8 +106,12 @@ body <- dashboardBody(
               column(width = 2, strong("Click to compute enrichment"), actionButton("runEnrich", "Apply values"))
             ) ,
             hr(),
-            fluidRow(column(width = 12,
+            fluidRow(column(width = 8,
                             offset = 2,
+                            circleButton(inputId = "info1", icon = icon("info"),
+                                         size="xs", status = "primary"),
+                            bsTooltip("info1", "Enter free text explaining biological experiment",
+                                      trigger = "click", placement = "right"),
                             textAreaInput("biologicalText",
                                           label="Biological context",
                                           resize = "both",
@@ -561,7 +568,7 @@ ui <- dashboardPage(title="Rnaseq viewer and report",
 ) # fin del UI
 
 ########################################## SERVER #################################################
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   observeEvent(input$aboutButton, {
     shinyalert("Enrich app 2020", "Authors:
@@ -584,10 +591,16 @@ server <- function(input, output) {
   
   observeEvent(datos$dds, {
     validate(need(datos$dds, ""))
-    if(!is(datos$dds, "DESeqDataSet") | !("results" %in% mcols(mcols(datos$dds))$type) ){
-      shinyalert("File format error",
-      "File must be a DESeqDataSet class object
-      and you should have run DESeq()", type = "error")} else {
+    # if(!is(datos$dds, "DESeqDataSet") | !("results" %in% mcols(mcols(datos$dds))$type) ){
+    #   shinyalert("File format error",
+    #   "File must be a DESeqDataSet class object
+    #   and you should have run DESeq()", type = "error")} 
+      if(!is(datos$dds, "DESeqDataSet") | !("results" %in% mcols(mcols(datos$dds))$type) ){
+          createAlert(session, "alert", "fileAlert",title = "Oops!!", 
+          content = "File must be a DESeqDataSet class object
+           and you should have run DESeq()", append=FALSE, style = "error")
+      }
+      else {
         res$sh <- as.data.frame(lfcShrink(datos$dds, coef=2, type="apeglm", res = results(datos$dds)))
         conversion <- geneIdConverter(rownames(res$sh))
         res$sh$baseMean <- round(res$sh$baseMean,4)
@@ -602,6 +615,7 @@ server <- function(input, output) {
         
         logfcRange$min <- min(res$sh$log2FoldChange)
         logfcRange$max <- max(res$sh$log2FoldChange)
+        closeAlert(session, "fileAlert")
       }
   })
   
