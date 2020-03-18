@@ -624,9 +624,9 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$runEnrich, {
-    data$genesUp <- getSigUpregulated(datos$dds, padj(), logfc()[2]) 
-    data$genesDown <- getSigDownregulated(datos$dds, padj(), logfc()[1]) 
-    data$genesall <- rbind(data$genesUp, data$genesDown)
+    data$genesUp <- getSigUpregulated(res$sh, padj(), logfc()[2]) #datos$dds
+    data$genesDown <- getSigDownregulated(res$sh, padj(), logfc()[1]) #datos$dds
+    data$genesall <- rbind(data$genesUp, data$genesDown) #datos$dds
     
     kgg$all <- customKegg(data$genesall, species = "Mm", species.KEGG = "mmu")
     kggDT$all <- kegg2DT(kgg$all, data$genesall)

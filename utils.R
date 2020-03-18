@@ -932,7 +932,7 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
 # actualmente para p-val <= 0.05 fijo.
 getSigUpregulated <- function(dds, pval=0.05, logfc=0){
   #res.sh <- lfcShrink(dds, coef=2, type="apeglm", res = results(dds))
-  rk <- as.data.frame(res.sh)
+  rk <- as.data.frame(dds)
   rk <- rk[rk$log2FoldChange >logfc & rk$padj<=pval,]
   rk <- rk[ order(rk$padj, decreasing = TRUE), ]
   annot <- geneIdConverter(rownames(rk))
@@ -943,7 +943,7 @@ getSigUpregulated <- function(dds, pval=0.05, logfc=0){
 # actualmente para p-val <= 0.05 fijo.
 getSigDownregulated <- function(dds, pval=0.05, logfc=0){
   #res.sh <- lfcShrink(dds, coef=2, type="apeglm", res = results(dds))
-  rk <- as.data.frame(res.sh)
+  rk <- as.data.frame(dds)
   rk <- rk[rk$log2FoldChange <logfc & rk$padj<=pval,]
   rk <- rk[ order(rk$padj, decreasing = TRUE), ]
   annot <- geneIdConverter(rownames(rk))
