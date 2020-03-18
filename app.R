@@ -1,7 +1,9 @@
 library(shinydashboard)
 library(AnnotationDbi)
 library(org.Mm.eg.db)
+library(org.Hs.eg.db)
 library(EnsDb.Mmusculus.v79)
+library(EnsDb.Hsapiens.v86)
 library(limma)
 library(tidyverse)
 library(DT)
@@ -26,10 +28,23 @@ header <- dashboardHeader(title = "RNAseq viewer and report App",
 ### SIDEBAR ##########
 sidebar <- dashboardSidebar(useShinyalert(),
                             sidebarMenu(
+                                menuItem(
+                                    pickerInput(
+                                        inputId = "specie",
+                                        label = "Select specie",
+                                        choices = list( "Human" = "Hs", "Mouse" = "Mm"),
+                                        options = list(title = "specie"),
+                                        selected = NULL
+                                    ) 
+                                )
+                            ),
+                            sidebarMenu(
                               menuItem(
-                                fileInput("deseqFile",
-                                          "Choose RDS with DESeq object",
-                                          placeholder = "RDS DESeq", accept = ".Rds"))),
+                                  uiOutput("deseqFile")
+                                # fileInput("deseqFile",
+                                #           "Choose RDS with DESeq object",
+                                #           placeholder = "RDS DESeq", accept = ".Rds")
+                                )),
                             sidebarMenu(
                               menuItem("App Information",
                                        tabName = "info",
@@ -100,9 +115,9 @@ body <- dashboardBody(
     tabItem(tabName = "preview",
             fluidRow( 
               column(width = 2, uiOutput("sampleGroup")),
-              column(width = 2, uiOutput("specie")),
-              column(width = 3, uiOutput("logfc")),
-              column(width = 3, uiOutput("padj")),
+              #column(width = 2, uiOutput("specie")),
+              column(width = 3, offset = 1, uiOutput("logfc")),
+              column(width = 4, uiOutput("padj")),
               column(width = 2, strong("Click to compute enrichment"), actionButton("runEnrich", "Apply values"))
             ) ,
             hr(),
@@ -624,18 +639,18 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$runEnrich, {
-    data$genesUp <- getSigUpregulated(res$sh, padj(), logfc()[2]) #datos$dds
-    data$genesDown <- getSigDownregulated(res$sh, padj(), logfc()[1]) #datos$dds
-    data$genesall <- rbind(data$genesUp, data$genesDown) #datos$dds
+    data$genesUp <- getSigUpregulated(res$sh, padj(), logfc()[2]) 
+    data$genesDown <- getSigDownregulated(res$sh, padj(), logfc()[1]) 
+    data$genesall <- rbind(data$genesUp, data$genesDown)
     
-    kgg$all <- customKegg(data$genesall, species = "Mm", species.KEGG = "mmu")
+    kgg$all <- customKegg(data$genesall, species = specie() ) #"Mm"), species.KEGG = "mmu")
     kggDT$all <- kegg2DT(kgg$all, data$genesall)
     
-    kgg$up <- customKegg(data$genesUp, species = "Mm", species.KEGG = "mmu")
+    kgg$up <- customKegg(data$genesUp, species = specie() )#"Mm")#, species.KEGG = "mmu")
     kggDT$up <- kegg2DT(kgg$up, data$genesUp)
     
     
-    kgg$down <- customKegg(data$genesDown, species = "Mm", species.KEGG = "mmu")
+    kgg$down <- customKegg(data$genesDown, species = specie() )# "Mm")#, species.KEGG = "mmu")
     kggDT$down <- kegg2DT(kgg$down, data$genesDown)
     
     go$all <- customGO(data$genesall, species = "Mm")
@@ -674,6 +689,16 @@ server <- function(input, output, session) {
   biologicalText <- reactive({input$biologicalText})
   explainPreview <- reactive({input$explainPreview})
   keggAllText <- reactive({input$keggAllText})
+  specie <- reactive({input$specie})
+  
+  # InputFile
+  output$deseqFile <- renderUI({
+      validate(need(specie(), ""))
+      fileInput("deseqFile",
+          "Choose RDS with DESeq object",
+          placeholder = "RDS DESeq",
+          accept = ".Rds")
+  })
   
   # ui selector sample groups ###################
   output$sampleGroup <- renderUI({
@@ -687,12 +712,12 @@ server <- function(input, output, session) {
                 multiple = TRUE)
   })
   # ui selector specie ####################
-  output$specie <- renderUI({
-    validate(need(datos$dds, ""))
-    selectInput("specie", label = "Select specie",
-                choices = list("Human" = "Hs", "Mouse"="Mm"), 
-                selected = "Mm")
-  })
+  # output$specie <- renderUI({
+  #   validate(need(datos$dds, ""))
+  #   selectInput("specie", label = "Select specie",
+  #               choices = list("Human" = "Hs", "Mouse"="Mm"), 
+  #               selected = NULL)
+  # })
   # ui selector logfc #######################
   output$logfc <- renderUI({
     validate(need(datos$dds, ""))

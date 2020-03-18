@@ -362,7 +362,7 @@ customGO <- function(data, universe = NULL, species = "Hs", prior.prob = NULL,
 
 # Función para hacer enrich kegg ################
 customKegg <- function(data, universe = NULL, restrict.universe = FALSE,
-    species = "Hs", species.KEGG = "hsa", convert = FALSE, gene.pathway = NULL,
+    species = "Hs", species.KEGG = NULL, convert = FALSE, gene.pathway = NULL,
     pathway.names = NULL, prior.prob = NULL, covariate = NULL,
     plot = FALSE, ...) {
     if( !is.data.frame(data)){
