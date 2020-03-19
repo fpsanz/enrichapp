@@ -89,7 +89,7 @@ body <- dashboardBody(
     class = "busy",
     h4("Loading data, please be patient..."),
     img(src = "dna-svg-small-13.gif", style = "width: 150px"),
-    style = "z-index: 99; rgba(236, 240, 245, 0.5)"
+    style = "z-index: 99"
   ),
   bsAlert("alert"),
   tabItems(

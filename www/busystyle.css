@@ -5,7 +5,7 @@ div.busy {
   margin-top: 200px;
   margin-left: -200px;
   display:none;
-  background: rgba(236, 240, 245, .8);
+  background: rgba(236, 240, 245, 0);
   text-align: center;
   padding-top: 10px;
   padding-left: 20px;
