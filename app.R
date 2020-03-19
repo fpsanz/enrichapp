@@ -81,16 +81,16 @@ sidebar <- dashboardSidebar(useShinyalert(),
                             ))
 ### BODY ###############
 body <- dashboardBody(
-  shiny::tagList(shiny::tags$head(
-    shiny::tags$link(rel = "stylesheet", type = "text/css", href = "busystyle.css"),
-    shiny::tags$script(type = "text/javascript", src = "busy.js")
-  )),
-  div(
-    class = "busy",
-    h4("Loading data, please be patient..."),
-    img(src = "dna-svg-small-13.gif", style = "width: 150px"),
-    style = "z-index: 99"
-  ),
+    shiny::tagList(shiny::tags$head(
+        shiny::tags$link(rel = "stylesheet", type = "text/css", href = "busystyle.css"),
+        shiny::tags$script(type = "text/javascript", src = "busy.js")
+    )),
+    div(
+        class = "busy",
+        h4("Loading data, please be patient..."),
+        img(src = "dna-svg-small-13.gif", style = "width: 150px"),
+        style = "z-index: 99"
+    ), 
   bsAlert("alert"),
   tabItems(
     # Initial INFO
