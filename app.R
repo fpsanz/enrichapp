@@ -15,6 +15,7 @@ library(fgsea)
 library(shinyalert)
 library(shinyBS)
 library(shinyWidgets)
+library(shinydashboardPlus)
 source("utils.R")
 options(shiny.maxRequestSize = 3000*1024^2)
 
@@ -94,8 +95,11 @@ body <- dashboardBody(
   tabItems(
     # Initial INFO
     tabItem(tabName = "info",
-            h1(strong("Welcome to Enrich app 2020!")),
             br(),
+            fluidRow(column(offset = 2,width = 10,
+            box(width=10,
+                status = "info",
+                title = h1(strong("Welcome to Enrich app 2020!") ),
             h3("Before starting using the app"),
             p("As a necessary initial element to start the analysis, 
                 the program imports an object of the type DeseqDataSet, 
@@ -108,9 +112,8 @@ body <- dashboardBody(
             h3("How to download the app"),
             p("This app can be found on ",
               a("GitHub.", 
-                href = "https://github.com/")),
-            
-    ),
+                href = "https://github.com/"))),
+    ) )),
     # preview tab
     tabItem(tabName = "preview",
             fluidRow( 
@@ -617,14 +620,16 @@ server <- function(input, output, session) {
       }
       else {
         res$sh <- as.data.frame(lfcShrink(datos$dds, coef=2, type="apeglm", res = results(datos$dds)))
-        conversion <- geneIdConverter(rownames(res$sh))
+        conversion <- geneIdConverter(rownames(res$sh), specie() )
         res$sh$baseMean <- round(res$sh$baseMean,4)
         res$sh$lfcSE <- round(res$sh$lfcSE,4)
         res$sh$log2FoldChange <- round(res$sh$log2FoldChange,4)
         res$sh <- cbind(`Description`=conversion$description, res$sh)
         res$sh <- cbind(`GeneName/Symbol`=conversion$consensus, res$sh)
         res$sh <-  res$sh %>% select(-c(pvalue))
-        links = paste0("<a href='http://www.ensembl.org/Mus_musculus/Gene/Summary?db=core;g=",
+        if(specie() == "Mm" ){spc = "Mus_musculus"}
+        else {spc = "Homo_sapiens"}
+        links = paste0("<a href='http://www.ensembl.org/",spc,",/Gene/Summary?db=core;g=",
                        rownames(res$sh),"' target='_blank'>",rownames(res$sh),"</a>")
         res$sh <- cbind(`GeneName/Ensembl`= links, res$sh)
         
@@ -639,8 +644,8 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$runEnrich, {
-    data$genesUp <- getSigUpregulated(res$sh, padj(), logfc()[2]) 
-    data$genesDown <- getSigDownregulated(res$sh, padj(), logfc()[1]) 
+    data$genesUp <- getSigUpregulated(res$sh, padj(), logfc()[2], specie() ) 
+    data$genesDown <- getSigDownregulated(res$sh, padj(), logfc()[1], specie() ) 
     data$genesall <- rbind(data$genesUp, data$genesDown)
     
     kgg$all <- customKegg(data$genesall, species = specie() ) #"Mm"), species.KEGG = "mmu")

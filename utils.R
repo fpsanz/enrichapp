@@ -930,43 +930,53 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
 
 # Función para recuperar los genes up de un objeto DEseq #############
 # actualmente para p-val <= 0.05 fijo.
-getSigUpregulated <- function(dds, pval=0.05, logfc=0){
+getSigUpregulated <- function(dds, pval=0.05, logfc=0, specie="Mm"){
   #res.sh <- lfcShrink(dds, coef=2, type="apeglm", res = results(dds))
   rk <- as.data.frame(dds)
   rk <- rk[rk$log2FoldChange >logfc & rk$padj<=pval,]
   rk <- rk[ order(rk$padj, decreasing = TRUE), ]
-  annot <- geneIdConverter(rownames(rk))
+  annot <- geneIdConverter(rownames(rk), specie)
   return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
 }
 
 # Función para recuperar los genes down de un objeto DEseq #############
 # actualmente para p-val <= 0.05 fijo.
-getSigDownregulated <- function(dds, pval=0.05, logfc=0){
+getSigDownregulated <- function(dds, pval=0.05, logfc=0, specie="Mm"){
   #res.sh <- lfcShrink(dds, coef=2, type="apeglm", res = results(dds))
   rk <- as.data.frame(dds)
   rk <- rk[rk$log2FoldChange <logfc & rk$padj<=pval,]
   rk <- rk[ order(rk$padj, decreasing = TRUE), ]
-  annot <- geneIdConverter(rownames(rk))
+  annot <- geneIdConverter(rownames(rk), specie)
   return(data.frame(SYMBOL = annot$consensus, ENTREZID = annot$ENTREZID, stringsAsFactors = F) )
 }
 
 # Convertidor de nombres de genes ###################
 # Se le pasa un vector de ensembl y devuelve un df con varios nombres
-geneIdConverter <- function(genes){ # genes = vector of ensembl gene ids (sólo para Mm por ahora)
+geneIdConverter <- function(genes, specie="Mm"){ # genes = vector of ensembl gene ids (sólo para Mm por ahora)
   require("EnsDb.Mmusculus.v79")
   require("org.Mm.eg.db")
+  require("EnsDb.Hsapiens.v86")
+  require("org.Hs.eg.db")
+  if(specie=="Mm"){
+      ensdb <- EnsDb.Mmusculus.v79
+      orgdb <- org.Mm.eg.db
+  }
+    else{
+        ensdb <- EnsDb.Hsapiens.v86
+        orgdb <- org.Hs.eg.db
+    }
   annot <- NULL
   annot$ENSEMBL <- genes
-  annot$SYMBOL <-  mapIds(EnsDb.Mmusculus.v79, keys=genes, column="SYMBOL",keytype="GENEID")
-  annot$SYMBOL1 <- mapIds(org.Mm.eg.db, keys = genes, column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first') 
-  annot$description <- mapIds(org.Mm.eg.db, keys = genes, column = 'GENENAME', keytype = 'ENSEMBL', multiVals = 'first')
+  annot$SYMBOL <-  mapIds(ensdb, keys=genes, column="SYMBOL",keytype="GENEID")
+  annot$SYMBOL1 <- mapIds(orgdb, keys = genes, column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first') 
+  annot$description <- mapIds(orgdb, keys = genes, column = 'GENENAME', keytype = 'ENSEMBL', multiVals = 'first')
   annot <- as.data.frame(annot)
   consensus <- data.frame('Symbol'= ifelse(!is.na(annot$SYMBOL), as.vector(annot$SYMBOL),
                                            ifelse(!is.na(annot$SYMBOL1),as.vector(annot$SYMBOL1),
                                                   as.vector(annot$ENSEMBL))), stringsAsFactors = F)
   annot$consensus <- consensus$Symbol
-  entrez1 <- mapIds(org.Mm.eg.db, keys = annot$consensus, column = "ENTREZID", keytype = "SYMBOL")
-  entrez2 <- mapIds(org.Mm.eg.db, keys = as.character(annot$ENSEMBL),
+  entrez1 <- mapIds(orgdb, keys = annot$consensus, column = "ENTREZID", keytype = "SYMBOL")
+  entrez2 <- mapIds(orgdb, keys = as.character(annot$ENSEMBL),
                     column = "ENTREZID", keytype = "ENSEMBL")
   annot$entrez1 <- entrez1
   annot$entrez2 <- entrez2
