@@ -9,6 +9,7 @@ library(tidyverse)
 library(DT)
 library(purrr)
 library(plotly)
+library(ggpubr)
 library(chorddiag)
 library(DESeq2)
 library(fgsea)
@@ -154,12 +155,24 @@ body <- dashboardBody(
               )
             ),
             hr(),
+            h3("Expression Plots"),
+            fluidRow(column(
+              width = 5,
+              offset = 1,
+              plotOutput("volcano", height = "600px")),
+            column(
+              width = 9,
+              offset = 5,
+              plotOutput("MA", height = "600px"))
+            ),
+            hr(),
             h3("PCA"),
             fluidRow(column(
               width = 8,
               offset = 2,
               plotOutput("pca", height = "600px")
-            )),
+              )
+            ),
             fluidRow(
                 column(width = 12,
                        offset = 2,
@@ -625,13 +638,13 @@ server <- function(input, output, session) {
         res$sh$lfcSE <- round(res$sh$lfcSE,4)
         res$sh$log2FoldChange <- round(res$sh$log2FoldChange,4)
         res$sh <- cbind(`Description`=conversion$description, res$sh)
-        res$sh <- cbind(`GeneName/Symbol`=conversion$consensus, res$sh)
+        res$sh <- cbind(`GeneName_Symbol`=conversion$consensus, res$sh)
         res$sh <-  res$sh %>% select(-c(pvalue))
         if(specie() == "Mm" ){spc = "Mus_musculus"}
         else {spc = "Homo_sapiens"}
         links = paste0("<a href='http://www.ensembl.org/",spc,",/Gene/Summary?db=core;g=",
                        rownames(res$sh),"' target='_blank'>",rownames(res$sh),"</a>")
-        res$sh <- cbind(`GeneName/Ensembl`= links, res$sh)
+        res$sh <- cbind(`GeneName_Ensembl`= links, res$sh)
         
         logfcRange$min <- min(res$sh$log2FoldChange)
         logfcRange$max <- max(res$sh$log2FoldChange)
@@ -795,6 +808,35 @@ server <- function(input, output, session) {
       theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
         scale_size_manual(values = 4) +
     theme(text = element_text(size=16))
+  })
+  # view Volcano plot data ###################
+  output$volcano <- renderPlot( {
+    validate(need(datos$dds, "Load file and condition to render Volcano"))
+    validate(need(res$sh, "Load file to render table"))
+    CustomVolcano(res$sh, lab = res$sh$GeneName_Symbol, 
+                  x = 'log2FoldChange',
+                  y = 'padj',
+                  pCutoff = padj(),
+                  FCcutoffUP = logfc()[2],
+                  FCcutoffDOWN = logfc()[1],
+                  xlim = c(-8, 8)
+                  )
+  })
+  # view MA plot data ###################
+  output$MA <- renderPlot( {
+    validate(need(datos$dds, "Load file and condition to render Volcano"))
+    validate(need(res$sh, "Load file to render table"))
+    MA(res$sh, main = expression("SOCS3" %->% "GFP"),
+       fdr = padj(), fcDOWN = logfc()[1], fcUP = logfc()[2] , size = 0.3,
+       palette = c("#B31B21", "#1465AC", "darkgray"),
+       genenames = res$sh$GeneName_Symbol,
+       legend = "top", top = 15, select.top.method = c('padj','fc'),
+       font.label = c("plain", 12),
+       font.legend = c("plain", 15),
+       font.main = "plain",
+       cex.axis = 1.1, cex.lab = 1.3,
+       ggtheme = theme_classic()
+    )
   })
   # KEGG table All #####################################
   output$tableAll <- DT::renderDT(server=TRUE,{

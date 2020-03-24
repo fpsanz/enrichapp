@@ -1103,3 +1103,383 @@ updateDatabases <- function(species){
     filename <- paste0(species,"GOlinks.Rds")
     saveRDS(GeneID.PathID, filename)
 }
+
+# Customized Volcano Plot
+
+CustomVolcano <- function (toptable, lab, x, y, selectLab = NULL, xlim = c(min(toptable[[x]], 
+                           na.rm = TRUE), max(toptable[[x]], na.rm = TRUE)), 
+                           ylim = c(0, max(-log10(toptable[[y]]), na.rm = TRUE) + 5), xlab = bquote(~Log[2] ~ "fold change"), 
+                           ylab = bquote(~-Log[10] ~ italic(P)), axisLabSize = 18, 
+                           title = "Volcano plot", subtitle = "", caption = paste0("Total = ", 
+                           nrow(toptable), " variables"), titleLabSize = 18, subtitleLabSize = 14, 
+                           captionLabSize = 14, pCutoff = 1e-05, pLabellingCutoff = pCutoff, 
+                           FCcutoffDOWN = -1, FCcutoffUP = 1 , cutoffLineType = "longdash", cutoffLineCol = "black", 
+                           cutoffLineWidth = 0.4, transcriptPointSize = 0.8, transcriptLabSize = 3, 
+                           transcriptLabCol = "black", transcriptLabFace = "plain", 
+                           transcriptLabhjust = 0, transcriptLabvjust = 1.5, pointSize = 2, 
+                           labSize = 3, labCol = "black", labFace = "plain", labhjust = 0, 
+                           labvjust = 1.5, boxedlabels = FALSE, boxedLabels = FALSE, 
+                           shape = 19, shapeCustom = NULL, col = c("grey30", "forestgreen", 
+                           "royalblue", "red2"), colCustom = NULL, colAlpha = 1/2, 
+                           legend = c("NS", "Log2 FC", "P", "P & Log2 FC"), legendLabels = c("NS", 
+                           expression(Log[2]~FC), "p-adjusted", expression(p-adjusted ~ and ~ log[2]~FC)), 
+                           legendPosition = "top", legendLabSize = 14, 
+                           legendIconSize = 4, legendVisible = TRUE, shade = NULL, 
+                           shadeLabel = NULL, shadeAlpha = 1/2, shadeFill = "grey", 
+                           shadeSize = 0.01, shadeBins = 2, drawconnectors = FALSE, 
+                           drawConnectors = FALSE, widthConnectors = 0.5, typeConnectors = "closed", 
+                           endsConnectors = "first", lengthConnectors = unit(0.01, "npc"), colConnectors = "grey10", 
+                           hline = NULL, hlineType = "longdash", 
+                           hlineCol = "black", hlineWidth = 0.4, vline = NULL, vlineType = "longdash", 
+                           vlineCol = "black", vlineWidth = 0.4, gridlines.major = TRUE, 
+                           gridlines.minor = TRUE, border = "partial", borderWidth = 0.8, 
+                           borderColour = "black") 
+{
+  
+  if (!is.numeric(toptable[[x]])) {
+    stop(paste(x, " is not numeric!", sep = ""))
+  }
+  if (!is.numeric(toptable[[y]])) {
+    stop(paste(y, " is not numeric!", sep = ""))
+  }
+  i <- xvals <- yvals <- Sig <- NULL
+  if (!missing("transcriptPointSize")) {
+    warning(paste0("transcriptPointSize argument deprecated in v1.4", 
+                   " - please use pointSize"))
+    pointSize <- transcriptPointSize
+  }
+  if (!missing("transcriptLabSize")) {
+    warning(paste0("transcriptLabSize argument deprecated in v1.4", 
+                   " - please use labSize"))
+    labSize <- transcriptLabSize
+  }
+  if (!missing("transcriptLabCol")) {
+    warning(paste0("transcriptLabCol argument deprecated in v1.4", 
+                   " - please use labCol"))
+    labCol <- transcriptLabCol
+  }
+  if (!missing("transcriptLabFace")) {
+    warning(paste0("transcriptLabFace argument deprecated in v1.4", 
+                   " - please use labFace"))
+    labFace <- transcriptLabFace
+  }
+  if (!missing("transcriptLabhjust")) {
+    warning(paste0("transcriptLabhjust argument deprecated in v1.4", 
+                   " - please use labhjust"))
+    labhjust <- transcriptLabhjust
+  }
+  if (!missing("transcriptLabvjust")) {
+    warning(paste0("transcriptLabvjust argument deprecated in v1.4", 
+                   " - please use labvjust"))
+    labvjust <- transcriptLabvjust
+  }
+  if (!missing("boxedlabels")) {
+    warning(paste0("boxedlabels argument deprecated in v1.4", 
+                   " - please use boxedLabels"))
+    boxedLabels <- boxedlabels
+  }
+  if (!missing("drawconnectors")) {
+    warning(paste0("drawconnectors argument deprecated since v1.2", 
+                   " - please use drawConnectors"))
+    drawConnectors <- drawconnectors
+  }
+  toptable <- as.data.frame(toptable)
+  toptable$Sig <- "NS"
+  toptable$Sig[toptable[[x]] >= FCcutoffUP] <- "FC"
+  toptable$Sig[toptable[[x]] <= FCcutoffDOWN] <- "FC"
+  toptable$Sig[(toptable[[y]] < pCutoff)] <- "P"
+  toptable$Sig[(toptable[[y]] < pCutoff) & (toptable[[x]] >= FCcutoffUP)] <- "FC_P"
+  toptable$Sig[(toptable[[y]] < pCutoff) & (toptable[[x]] <= FCcutoffDOWN)] <- "FC_P"
+  toptable$Sig <- factor(toptable$Sig, levels = c("NS", "FC", "P", "FC_P"))
+  
+  if (min(toptable[[y]], na.rm = TRUE) == 0) {
+    warning(paste("One or more p-values is 0.", "Converting to 10^-1 * current", 
+                  "lowest non-zero p-value..."), call. = FALSE)
+    toptable[which(toptable[[y]] == 0), y] <- min(toptable[which(toptable[[y]] != 0), y], na.rm = TRUE) * 10^-1
+  }
+  toptable$lab <- lab
+  toptable$xvals <- toptable[[x]]
+  toptable$yvals <- toptable[[y]]
+  if (!is.null(selectLab)) {
+    names.new <- rep(NA, length(toptable$lab))
+    indices <- which(toptable$lab %in% selectLab)
+    names.new[indices] <- toptable$lab[indices]
+    toptable$lab <- names.new
+  }
+  th <- theme_bw(base_size = 24) + theme(legend.background = element_rect(), 
+          plot.title = element_text(angle = 0, size = titleLabSize, 
+          face = "bold", vjust = 1), plot.subtitle = element_text(angle = 0, 
+          size = subtitleLabSize, face = "plain", vjust = 1), 
+          plot.caption = element_text(angle = 0, size = captionLabSize, 
+          face = "plain", vjust = 1), axis.text.x = element_text(angle = 0, size = axisLabSize, vjust = 1), 
+          axis.text.y = element_text(angle = 0, 
+          size = axisLabSize, vjust = 1), axis.title = element_text(size = axisLabSize), 
+          legend.position = legendPosition, legend.key = element_blank(), 
+          legend.key.size = unit(0.5, "cm"), legend.text = element_text(size = legendLabSize), 
+          title = element_text(size = legendLabSize), legend.title = element_blank())
+  if (!is.null(colCustom) & !is.null(shapeCustom)) {
+    plot <- ggplot(toptable, aes(x = xvals, y = -log10(yvals))) + 
+      th + guides(colour = guide_legend(order = 1, override.aes = list(size = legendIconSize)), 
+                  shape = guide_legend(order = 2, override.aes = list(size = legendIconSize))) + 
+      geom_point(aes(color = factor(names(colCustom)), 
+                     shape = factor(names(shapeCustom))), alpha = colAlpha, 
+                 size = pointSize, na.rm = TRUE) + scale_color_manual(values = colCustom) + 
+      scale_shape_manual(values = shapeCustom)
+  }
+  else if (!is.null(colCustom) & is.null(shapeCustom) & length(shape) == 
+           1) {
+    plot <- ggplot(toptable, aes(x = xvals, y = -log10(yvals))) + 
+      th + guides(colour = guide_legend(order = 1, override.aes = list(size = legendIconSize)), 
+                  shape = guide_legend(order = 2, override.aes = list(size = legendIconSize))) + 
+      geom_point(aes(color = factor(names(colCustom))), 
+                 alpha = colAlpha, shape = shape, size = pointSize, 
+                 na.rm = TRUE) + scale_color_manual(values = colCustom) + 
+      scale_shape_manual(guide = TRUE)
+  }
+  else if (!is.null(colCustom) & is.null(shapeCustom) & length(shape) == 
+           4) {
+    plot <- ggplot(toptable, aes(x = xvals, y = -log10(yvals))) + 
+      th + guides(colour = guide_legend(order = 1, override.aes = list(size = legendIconSize)), 
+                  shape = guide_legend(order = 2, override.aes = list(size = legendIconSize))) + 
+      geom_point(aes(color = factor(names(colCustom)), 
+                     shape = factor(Sig)), alpha = colAlpha, size = pointSize, 
+                 na.rm = TRUE) + scale_color_manual(values = colCustom) + 
+      scale_shape_manual(values = c(NS = shape[1], FC = shape[2], 
+                                    P = shape[3], FC_P = shape[4]), labels = c(NS = legendLabels[1], 
+                                    FC = legendLabels[2], P = legendLabels[3], FC_P = legendLabels[4]), 
+                                    guide = TRUE)
+  }
+  else if (is.null(colCustom) & !is.null(shapeCustom)) {
+    plot <- ggplot(toptable, aes(x = xvals, y = -log10(yvals))) + 
+      th + guides(colour = guide_legend(order = 1, override.aes = list(size = legendIconSize)), 
+                  shape = guide_legend(order = 2, override.aes = list(size = legendIconSize))) + 
+      geom_point(aes(color = factor(Sig), shape = factor(names(shapeCustom))), 
+                 alpha = colAlpha, size = pointSize, na.rm = TRUE) + 
+      scale_color_manual(values = c(NS = col[1], FC = col[2], 
+                                    P = col[3], FC_P = col[4]), labels = c(NS = legendLabels[1], 
+                                                                           FC = legendLabels[2], P = legendLabels[3], FC_P = legendLabels[4])) + 
+      scale_shape_manual(values = shapeCustom)
+  }
+  else if (is.null(colCustom) & is.null(shapeCustom) & length(shape) == 
+           1) {
+    plot <- ggplot(toptable, aes(x = xvals, y = -log10(yvals))) + 
+      th + guides(colour = guide_legend(order = 1, override.aes = list(shape = shape, 
+               size = legendIconSize))) + geom_point(aes(color = factor(Sig)), 
+               alpha = colAlpha, shape = shape, size = pointSize, 
+               na.rm = TRUE, show.legend = legendVisible) + scale_color_manual(values = c(NS = col[1], 
+               FC = col[2], P = col[3], FC_P = col[4]), labels = c(NS = legendLabels[1], 
+               FC = legendLabels[2], P = legendLabels[3], FC_P = legendLabels[4]))
+  }
+  else if (is.null(colCustom) & is.null(shapeCustom) & length(shape) == 4) {
+    plot <- ggplot(toptable, aes(x = xvals, y = -log10(yvals))) + 
+      th + guides(colour = guide_legend(order = 1, override.aes = list(shape = c(NS = shape[1], 
+      FC = shape[2], P = shape[3], FC_P = shape[4]), size = legendIconSize))) + 
+      geom_point(aes(color = factor(Sig), shape = factor(Sig)), 
+                 alpha = colAlpha, size = pointSize, na.rm = TRUE, 
+                 show.legend = legendVisible) + scale_color_manual(values = c(NS = col[1], 
+                 FC = col[2], P = col[3], FC_P = col[4]), labels = c(NS = legendLabels[1], 
+                 FC = legendLabels[2], P = legendLabels[3], FC_P = legendLabels[4])) + 
+      scale_shape_manual(values = c(NS = shape[1], FC = shape[2], 
+                                    P = shape[3], FC_P = shape[4]), guide = FALSE)
+  }
+  plot <- plot + xlab(xlab) + ylab(ylab) + xlim(xlim[1], xlim[2]) + 
+    ylim(ylim[1], ylim[2]) + geom_vline(xintercept = c(FCcutoffDOWN,FCcutoffUP), linetype = cutoffLineType, colour = cutoffLineCol, 
+                                        size = cutoffLineWidth) + geom_hline(yintercept = -log10(as.numeric(pCutoff)), 
+                                        linetype = cutoffLineType, colour = cutoffLineCol, size = cutoffLineWidth)
+  plot <- plot + labs(title = title, subtitle = subtitle, caption = caption)
+  if (!is.null(vline)) {
+    plot <- plot + geom_vline(xintercept = vline, linetype = vlineType, 
+                              colour = vlineCol, size = vlineWidth)
+  }
+  if (!is.null(hline)) {
+    plot <- plot + geom_hline(yintercept = -log10(hline), 
+                              linetype = hlineType, colour = hlineCol, size = hlineWidth)
+  }
+  if (border == "full") {
+    plot <- plot + theme(panel.border = element_rect(colour = borderColour, 
+                                                     fill = NA, size = borderWidth))
+  }
+  else if (border == "partial") {
+    plot <- plot + theme(axis.line = element_line(size = borderWidth, 
+                                                  colour = borderColour), panel.border = element_blank(), 
+                         panel.background = element_blank())
+  }
+  else {
+    stop("Unrecognised value passed to 'border'. Must be 'full' or 'partial'")
+  }
+  if (gridlines.major == TRUE) {
+    plot <- plot + theme(panel.grid.major = element_line())
+  }
+  else {
+    plot <- plot + theme(panel.grid.major = element_blank())
+  }
+  if (gridlines.minor == TRUE) {
+    plot <- plot + theme(panel.grid.minor = element_line())
+  }
+  else {
+    plot <- plot + theme(panel.grid.minor = element_blank())
+  }
+  if (boxedLabels == FALSE) {
+    if (drawConnectors == TRUE && is.null(selectLab)) {
+      plot <- plot + geom_text_repel(data = subset(toptable, 
+                  toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN))),
+                  aes(label = subset(toptable, toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN)))[["lab"]]), 
+                  size = labSize, segment.color = colConnectors, 
+                  segment.size = widthConnectors, arrow = arrow(length = lengthConnectors, 
+                                     type = typeConnectors, ends = endsConnectors), 
+                                     hjust = labhjust, vjust = labvjust, colour = labCol, 
+                                     fontface = labFace, na.rm = TRUE)
+    }
+    else if (drawConnectors == TRUE && !is.null(selectLab)) {
+      plot <- plot + geom_text_repel(data = subset(toptable, 
+                                     !is.na(toptable[["lab"]])), aes(label = subset(toptable, 
+                                     !is.na(toptable[["lab"]]))[["lab"]]), size = labSize, 
+                                     segment.color = colConnectors, segment.size = widthConnectors, 
+                                     arrow = arrow(length = lengthConnectors, type = typeConnectors, 
+                                                   ends = endsConnectors), hjust = labhjust, 
+                                     vjust = labvjust, colour = labCol, fontface = labFace, 
+                                     na.rm = TRUE)
+    }
+    else if (drawConnectors == FALSE && !is.null(selectLab)) {
+      plot <- plot + geom_text(data = subset(toptable, 
+                               !is.na(toptable[["lab"]])), aes(label = subset(toptable, 
+                               !is.na(toptable[["lab"]]))[["lab"]]), size = labSize, 
+                               check_overlap = TRUE, hjust = labhjust, vjust = labvjust, 
+                               colour = labCol, fontface = labFace, na.rm = TRUE)
+    }
+    else if (drawConnectors == FALSE && is.null(selectLab)) {
+      plot <- plot + geom_text(data = subset(toptable, 
+                                             toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN))), 
+                                             aes(label = subset(toptable, toptable[[y]] < 
+                                             pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN)))[["lab"]]), 
+                               size = labSize, check_overlap = TRUE, hjust = labhjust, 
+                               vjust = labvjust, colour = labCol, fontface = labFace, 
+                               na.rm = TRUE)
+    }
+  }
+  else {
+    if (drawConnectors == TRUE && is.null(selectLab)) {
+      plot <- plot + geom_label_repel(data = subset(toptable, 
+                                                    toptable[[y]] < pLabellingCutoff & (toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN)), 
+                                                    aes(label = subset(toptable, 
+                                                    toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN)))[["lab"]]), 
+                                      size = labSize, segment.color = colConnectors, 
+                                      segment.size = widthConnectors, arrow = arrow(length = lengthConnectors, 
+                                                                                    type = typeConnectors, ends = endsConnectors), 
+                                      hjust = labhjust, vjust = labvjust, colour = labCol, 
+                                      fontface = labFace, na.rm = TRUE)
+    }
+    else if (drawConnectors == TRUE && !is.null(selectLab)) {
+      plot <- plot + geom_label_repel(data = subset(toptable, 
+                                      !is.na(toptable[["lab"]])), aes(label = subset(toptable, 
+                                      !is.na(toptable[["lab"]]))[["lab"]]), size = labSize, 
+                                      segment.color = colConnectors, segment.size = widthConnectors, 
+                                      arrow = arrow(length = lengthConnectors, type = typeConnectors, 
+                                                    ends = endsConnectors), hjust = labhjust, 
+                                      vjust = labvjust, colour = labCol, fontface = labFace, 
+                                      na.rm = TRUE)
+    }
+    else if (drawConnectors == FALSE && !is.null(selectLab)) {
+      plot <- plot + geom_label(data = subset(toptable, 
+                                !is.na(toptable[["lab"]])), aes(label = subset(toptable, 
+                                !is.na(toptable[["lab"]]))[["lab"]]), size = labSize, 
+                                hjust = labhjust, vjust = labvjust, colour = labCol, 
+                                fontface = labFace, na.rm = TRUE)
+    }
+    else if (drawConnectors == FALSE && is.null(selectLab)) {
+      plot <- plot + geom_label(data = subset(toptable, 
+                                toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN))),
+                                aes(label = subset(toptable, toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN)))[["lab"]]), 
+                                size = labSize, hjust = labhjust, vjust = labvjust, 
+                                colour = labCol, fontface = labFace, na.rm = TRUE)
+    }
+  }
+  if (!is.null(shade)) {
+    plot <- plot + stat_density2d(data = subset(toptable, 
+                                                rownames(toptable) %in% shade), fill = shadeFill, 
+                                  alpha = shadeAlpha, geom = "polygon", contour = TRUE, 
+                                  size = shadeSize, bins = shadeBins, show.legend = FALSE, 
+                                  na.rm = TRUE) + scale_fill_identity(name = shadeLabel, 
+                                                                      labels = shadeLabel, guide = "legend")
+  }
+  return(plot)
+}
+
+
+# MA plot
+
+MA <- function (data, fdr = 0.05, fcDOWN = -1, fcUP = 1, genenames = NULL, detection_call = NULL, 
+          size = NULL, font.label = c(12, "plain", "black"), label.rectangle = FALSE, 
+          palette = c("#B31B21", "#1465AC", "darkgray"), top = 15, 
+          select.top.method = c("padj", "fc"), main = NULL, xlab = "Log2 mean expression", 
+          ylab = "Log2 fold change", ggtheme = theme_classic(), ...) 
+{
+  if (!base::inherits(data, c("matrix", "data.frame", "DataFrame", 
+                              "DE_Results", "DESeqResults"))) 
+    stop("data must be an object of class matrix, data.frame, DataFrame, DE_Results or DESeqResults")
+  if (!is.null(detection_call)) {
+    if (nrow(data) != length(detection_call)) 
+      stop("detection_call must be a numeric vector of length = nrow(data)")
+  }
+  else if ("detection_call" %in% colnames(data)) {
+    detection_call <- as.vector(data$detection_call)
+  }
+  else detection_call = rep(1, nrow(data))
+  if (is.null(list(...)$legend)) 
+    legend <- c(0.12, 0.9)
+  ss <- base::setdiff(c("baseMean", "log2FoldChange", "padj"), 
+                      colnames(data))
+  if (length(ss) > 0) 
+    stop("The colnames of data must contain: ", paste(ss, collapse = ", "))
+  if (is.null(genenames)) 
+    genenames <- rownames(data)
+  else if (length(genenames) != nrow(data)) 
+    stop("genenames should be of length nrow(data).")
+  sig <- rep(3, nrow(data))
+  sig[which(data$padj <= fdr & data$log2FoldChange < 0 & data$log2FoldChange <= log2(as.numeric(fcDOWN)) & detection_call == 1)] = 2
+  sig[which(data$padj <= fdr & data$log2FoldChange > 0 & data$log2FoldChange >= log2(as.numeric(fcUP)) & detection_call == 1)] = 1
+  data <- data.frame(name = genenames, mean = data$baseMean, lfc = data$log2FoldChange, padj = data$padj, sig = sig)
+  . <- NULL
+  data$sig <- as.factor(data$sig)
+  .lev <- .levels(data$sig) %>% as.numeric()
+  palette <- palette[.lev]
+  new.levels <- c(paste0("Up: ", sum(sig == 1)), paste0("Down: ", sum(sig == 2)), "NS") %>% .[.lev]
+  data$sig <- factor(data$sig, labels = new.levels)
+  select.top.method <- match.arg(select.top.method)
+  if (select.top.method == "padj") 
+    data <- data[order(data$padj), ]
+  else if (select.top.method == "fc") 
+    data <- data[order(abs(data$lfc), decreasing = TRUE), 
+                 ]
+  labs_data <- stats::na.omit(data)
+  labs_data <- subset(labs_data, padj <= fdr & name != "" & 
+                        abs(lfc) >= log2(fc))
+  labs_data <- utils::head(labs_data, top)
+  font.label <- .parse_font(font.label)
+  font.label$size <- ifelse(is.null(font.label$size), 12, 
+                            font.label$size)
+  font.label$color <- ifelse(is.null(font.label$color), "black", 
+                             font.label$color)
+  font.label$face <- ifelse(is.null(font.label$face), "plain", 
+                            font.label$face)
+  set.seed(42)
+  mean <- lfc <- sig <- name <- padj <- NULL
+  p <- ggplot(data, aes(x = log2(mean + 1), y = lfc)) + geom_point(aes(color = sig), size = size)
+  if (label.rectangle) {
+    p <- p + ggrepel::geom_label_repel(data = labs_data, 
+                                       mapping = aes(label = name), box.padding = unit(0.35,"lines"), point.padding = unit(0.3, "lines"), 
+                                       force = 1, fontface = font.label$face, size = font.label$size/3, 
+                                       color = font.label$color)
+  }
+  else {
+    p <- p + ggrepel::geom_text_repel(data = labs_data, 
+                                      mapping = aes(label = name), box.padding = unit(0.35,  "lines"), point.padding = unit(0.3, "lines"), 
+                                      force = 1, fontface = font.label$face, size = font.label$size/3, 
+                                      color = font.label$color)
+  }
+  p <- p + scale_x_continuous(breaks = seq(0, max(log2(data$mean + 
+                                                         1)), 2)) + labs(x = xlab, y = ylab, title = main, color = "") + 
+    geom_hline(yintercept = c(0, -log2(fcDOWN), log2(fcUP)), linetype = c(1, 2, 2), color = c("black", "black", "black"))
+  p <- ggpar(p, palette = palette, ggtheme = ggtheme, ...)
+  p
+}
