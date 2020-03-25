@@ -827,6 +827,7 @@ server <- function(input, output, session) {
   output$MA <- renderPlot( {
     validate(need(datos$dds, "Load file and condition to render Volcano"))
     validate(need(res$sh, "Load file to render table"))
+    validate(need(logfc(), ""))
     MA(res$sh, main = expression("SOCS3" %->% "GFP"),
        fdr = padj(), fcDOWN = logfc()[1], fcUP = logfc()[2] , size = 0.3,
        palette = c("#B31B21", "#1465AC", "darkgray"),

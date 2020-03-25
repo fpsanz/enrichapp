@@ -1405,7 +1405,13 @@ CustomVolcano <- function (toptable, lab, x, y, selectLab = NULL, xlim = c(min(t
 }
 
 
-# MA plot
+# MA plot ##################
+.levels <- function (x) 
+    {
+    if (!is.factor(x)) 
+        x <- as.factor(x)
+    levels(x)
+    }
 
 MA <- function (data, fdr = 0.05, fcDOWN = -1, fcUP = 1, genenames = NULL, detection_call = NULL, 
           size = NULL, font.label = c(12, "plain", "black"), label.rectangle = FALSE, 
@@ -1452,9 +1458,9 @@ MA <- function (data, fdr = 0.05, fcDOWN = -1, fcUP = 1, genenames = NULL, detec
                  ]
   labs_data <- stats::na.omit(data)
   labs_data <- subset(labs_data, padj <= fdr & name != "" & 
-                        abs(lfc) >= log2(fc))
+                        (lfc >= fcUP | lfc <=fcDOWN) )
   labs_data <- utils::head(labs_data, top)
-  font.label <- .parse_font(font.label)
+  font.label <- ggpubr:::.parse_font(font.label)
   font.label$size <- ifelse(is.null(font.label$size), 12, 
                             font.label$size)
   font.label$color <- ifelse(is.null(font.label$color), "black", 
@@ -1480,5 +1486,5 @@ MA <- function (data, fdr = 0.05, fcDOWN = -1, fcUP = 1, genenames = NULL, detec
                                                          1)), 2)) + labs(x = xlab, y = ylab, title = main, color = "") + 
     geom_hline(yintercept = c(0, -log2(fcDOWN), log2(fcUP)), linetype = c(1, 2, 2), color = c("black", "black", "black"))
   p <- ggpar(p, palette = palette, ggtheme = ggtheme, ...)
-  p
+  return(p)
 }
