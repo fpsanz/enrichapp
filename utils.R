@@ -1105,7 +1105,9 @@ updateDatabases <- function(species){
 }
 
 # Customized Volcano Plot
-
+CustomVolcano(res.sh, x = 'log2FoldChange', 
+              y = "padj", lab = res.sh$GeneName_Symbol, 
+              selectLab = res.sh$GeneName_Symbol[1:10])
 CustomVolcano <- function (toptable, lab, x, y, selectLab = NULL, xlim = c(min(toptable[[x]], 
                            na.rm = TRUE), max(toptable[[x]], na.rm = TRUE)), 
                            ylim = c(0, max(-log10(toptable[[y]]), na.rm = TRUE) + 5), xlab = bquote(~Log[2] ~ "fold change"), 
@@ -1322,8 +1324,8 @@ CustomVolcano <- function (toptable, lab, x, y, selectLab = NULL, xlim = c(min(t
   if (boxedLabels == FALSE) {
     if (drawConnectors == TRUE && is.null(selectLab)) {
       plot <- plot + geom_text_repel(data = subset(toptable, 
-                  toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN))),
-                  aes(label = subset(toptable, toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN)))[["lab"]]), 
+                  toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) | (toptable[[x]] < FCcutoffDOWN))),
+                  aes(label = subset(toptable, toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) | (toptable[[x]] < FCcutoffDOWN)))[["lab"]]), 
                   size = labSize, segment.color = colConnectors, 
                   segment.size = widthConnectors, arrow = arrow(length = lengthConnectors, 
                                      type = typeConnectors, ends = endsConnectors), 
@@ -1349,9 +1351,9 @@ CustomVolcano <- function (toptable, lab, x, y, selectLab = NULL, xlim = c(min(t
     }
     else if (drawConnectors == FALSE && is.null(selectLab)) {
       plot <- plot + geom_text(data = subset(toptable, 
-                                             toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN))), 
+                                             toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) | (toptable[[x]] < FCcutoffDOWN))), 
                                              aes(label = subset(toptable, toptable[[y]] < 
-                                             pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN)))[["lab"]]), 
+                                             pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) | (toptable[[x]] < FCcutoffDOWN)))[["lab"]]), 
                                size = labSize, check_overlap = TRUE, hjust = labhjust, 
                                vjust = labvjust, colour = labCol, fontface = labFace, 
                                na.rm = TRUE)
@@ -1360,9 +1362,9 @@ CustomVolcano <- function (toptable, lab, x, y, selectLab = NULL, xlim = c(min(t
   else {
     if (drawConnectors == TRUE && is.null(selectLab)) {
       plot <- plot + geom_label_repel(data = subset(toptable, 
-                                                    toptable[[y]] < pLabellingCutoff & (toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN)), 
+                                                    toptable[[y]] < pLabellingCutoff & (toptable[[x]] > FCcutoffUP) | (toptable[[x]] < FCcutoffDOWN)), 
                                                     aes(label = subset(toptable, 
-                                                    toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN)))[["lab"]]), 
+                                                    toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) | (toptable[[x]] < FCcutoffDOWN)))[["lab"]]), 
                                       size = labSize, segment.color = colConnectors, 
                                       segment.size = widthConnectors, arrow = arrow(length = lengthConnectors, 
                                                                                     type = typeConnectors, ends = endsConnectors), 
@@ -1388,8 +1390,8 @@ CustomVolcano <- function (toptable, lab, x, y, selectLab = NULL, xlim = c(min(t
     }
     else if (drawConnectors == FALSE && is.null(selectLab)) {
       plot <- plot + geom_label(data = subset(toptable, 
-                                toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN))),
-                                aes(label = subset(toptable, toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) & (toptable[[x]] < FCcutoffDOWN)))[["lab"]]), 
+                                toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) | (toptable[[x]] < FCcutoffDOWN))),
+                                aes(label = subset(toptable, toptable[[y]] < pLabellingCutoff & ((toptable[[x]] > FCcutoffUP) | (toptable[[x]] < FCcutoffDOWN)))[["lab"]]), 
                                 size = labSize, hjust = labhjust, vjust = labvjust, 
                                 colour = labCol, fontface = labFace, na.rm = TRUE)
     }

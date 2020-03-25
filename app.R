@@ -813,6 +813,7 @@ server <- function(input, output, session) {
   output$volcano <- renderPlot( {
     validate(need(datos$dds, "Load file and condition to render Volcano"))
     validate(need(res$sh, "Load file to render table"))
+    res$sh$GeneName_Symbol <- as.character(res$sh$GeneName_Symbol)
     CustomVolcano(res$sh, lab = res$sh$GeneName_Symbol, 
                   x = 'log2FoldChange',
                   y = 'padj',
