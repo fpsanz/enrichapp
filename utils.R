@@ -1104,10 +1104,7 @@ updateDatabases <- function(species){
     saveRDS(GeneID.PathID, filename)
 }
 
-# Customized Volcano Plot
-CustomVolcano(res.sh, x = 'log2FoldChange', 
-              y = "padj", lab = res.sh$GeneName_Symbol, 
-              selectLab = res.sh$GeneName_Symbol[1:10])
+# Customized Volcano Plot ###############
 CustomVolcano <- function (toptable, lab, x, y, selectLab = NULL, xlim = c(min(toptable[[x]], 
                            na.rm = TRUE), max(toptable[[x]], na.rm = TRUE)), 
                            ylim = c(0, max(-log10(toptable[[y]]), na.rm = TRUE) + 5), xlab = bquote(~Log[2] ~ "fold change"), 
