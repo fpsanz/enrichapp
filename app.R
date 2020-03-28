@@ -82,6 +82,9 @@ sidebar <- dashboardSidebar(useShinyalert(),
                             ))
 ### BODY ###############
 body <- dashboardBody(
+    setShadow(class = "shiny-plot-output"),
+    setShadow( class = "box"),
+    setShadow( class = "svg-container"),
     shiny::tagList(shiny::tags$head(
         shiny::tags$link(rel = "stylesheet", type = "text/css", href = "busystyle.css"),
         shiny::tags$script(type = "text/javascript", src = "busy.js")
@@ -158,11 +161,9 @@ body <- dashboardBody(
             h3("Expression Plots"),
             fluidRow(column(
               width = 5,
-              offset = 1,
               plotOutput("volcano", height = "600px")),
             column(
-              width = 9,
-              offset = 5,
+              width = 7,
               plotOutput("MA", height = "600px"))
             ),
             hr(),
