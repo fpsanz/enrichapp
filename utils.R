@@ -782,7 +782,7 @@ kegg2DT <- function(enrichdf, data, orderby = NULL, nrows = NULL) {
     return(CAup)
 }
 
-# Plot barrar de GO ####################
+# Plot barras de GO ####################
 plotGO <- function(enrichdf, nrows = 30, orderby=NULL, ont){
     require(plotly)
     if(!is.data.frame(enrichdf)){
@@ -809,8 +809,49 @@ plotGO <- function(enrichdf, nrows = 30, orderby=NULL, ont){
                title=dataTitle[[ont]][1])
     return(p)
 }
+# Plot barras de GOAll ####################
+plotGOAll <- function(enrichdf, nrows = 30, orderby=NULL, ont){
+    require(plotly)
+    require(ggplot2)
+    if(!is.data.frame(enrichdf)){
+        stop("enrichdf should be data.frame")
+    }
+    if(!exists("ont") | !(ont %in% c("BP","MF","CC")) ){
+        stop("A valid value should be provided for 'ont'")
+    }
+    dataTitle <- list(BP=c("Biological Process", '#E27D60','#60c6e2'),
+                      MF=c("Molecular Function",'#6399b8', '#b47f61'),
+                      CC=c("Cellular Component", '#956ea8', '#99037b'))
+    enrichdf <- enrichdf[enrichdf$Ont == ont, ]
+    if(!is.null(orderby)){
+        orderby = match.arg(orderby, c("DE", "P.DE", "N", "Term"))
+        if(orderby=="P.DE" | orderby =="Term"){
+            enrichdf <- enrichdf %>% arrange(get(orderby))
+        } else{ enrichdf <- enrichdf %>% arrange(desc(get(orderby)))}
+    }
+    enrichAll <- enrichdf[1:nrows, ]
+    enrichAll <- enrichAll %>% rowwise() %>%
+        mutate(numUp = length(which(strsplit(genes,", ")[[1]] %in% genesUp$ENTREZID ))) %>% 
+        mutate(numDown = -length(which(strsplit(genes,", ")[[1]] %in% genesDown$ENTREZID )))
+    enrichAll <- enrichAll %>% dplyr::select(go_id, numUp, numDown)
+    df <- data.frame(
+        Regulation = rep(c("Up", "Down"), each = nrows),
+        goId = enrichAll$go_id,
+        x = rep(1:nrows, 2),
+        DE = c(enrichAll$numUp, enrichAll$numDown)
+    )
+    colorfill <- c(dataTitle[[ont]][2:3])
+    p <- ggplot(df, aes(x = goId, y = DE, fill = Regulation)) +
+        geom_bar(stat = "identity", position = "identity") + coord_flip() +
+        theme(axis.text.y = element_text(angle = 0, hjust = 1)) +
+        theme(axis.title.y = element_blank()) + theme(legend.position = "none") +
+        scale_fill_manual(values = colorfill)+theme_bw()
+    p <- p %>% plotly::ggplotly()
+    return(p)
+}
 
-# Plot barrar de Kegg #############################333
+
+# Plot barras de Kegg ###########################
 plotKegg <- function(enrichdf, nrows = 30, orderby=NULL){
     require(plotly)
     if(!is.data.frame(enrichdf)){
@@ -830,6 +871,42 @@ plotKegg <- function(enrichdf, nrows = 30, orderby=NULL){
                title="Kegg pathways")
     return(p)
 }
+
+# Plot barras de KeggALL ###################
+plotKeggAll <- function(enrichdf, nrows = 30, orderby = NULL){
+    require(plotly)
+    require(ggplot2)
+        if(!is.data.frame(enrichdf)){
+        stop("enrichdf should be data.frame")
+    }
+    if(!is.null(orderby)){
+        orderby = match.arg(orderby, c("DE", "P.DE", "N", "Pathway"))
+        if(orderby=="P.DE" | orderby =="Pathway"){
+            enrichdf <- enrichdf %>% arrange(get(orderby))
+        } else{ enrichdf <- enrichdf %>% arrange(desc(get(orderby)))}
+    }
+    enrichAll <- enrichdf[1:nrows, ]
+    enrichAll <- enrichAll %>% rowwise() %>%
+        mutate(numUp = length(which(strsplit(genes,",")[[1]] %in% genesUp$ENTREZID ))) %>% 
+        mutate(numDown = -length(which(strsplit(genes,",")[[1]] %in% genesDown$ENTREZID )))
+    enrichAll <- enrichAll %>% dplyr::select(pathID, numUp, numDown)
+    df <- data.frame(
+        Regulation = rep(c("Up", "Down"), each = nrows),
+        pathId = enrichAll$pathID,
+        x = rep(1:nrows, 2),
+        DE = c(enrichAll$numUp, enrichAll$numDown)
+    )
+    colorfill <- c("#9682ba", "#a4b880")
+    p <- ggplot(df, aes(x = pathId, y = DE, fill = Regulation)) +
+        geom_bar(stat = "identity", position = "identity") + coord_flip() +
+        theme(axis.text.y = element_text(angle = 0, hjust = 1)) +
+        theme(axis.title.y = element_blank()) + theme(legend.position = "none") +
+        scale_fill_manual(values = colorfill)
+    p <- p %>% plotly::ggplotly()
+    return(p)
+}
+
+
 
 # Función sin uso actualmente -creo- #############
 loadGenes <- function(filegenes){

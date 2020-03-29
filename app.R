@@ -120,13 +120,18 @@ body <- dashboardBody(
     ) )),
     # preview tab
     tabItem(tabName = "preview",
+            fluidRow(
+                infoBoxOutput("allbox"),
+                infoBoxOutput("upbox"),
+                infoBoxOutput("downbox"),
+            ), # fin fluidrow boxinfos
             fluidRow( 
               column(width = 2, uiOutput("sampleGroup")),
               #column(width = 2, uiOutput("specie")),
               column(width = 3, offset = 1, uiOutput("logfc")),
               column(width = 4, uiOutput("padj")),
               column(width = 2, strong("Click to compute enrichment"), actionButton("runEnrich", "Apply values"))
-            ) ,
+            ),
             hr(),
             fluidRow(column(width = 8,
                             offset = 2,
@@ -621,6 +626,10 @@ server <- function(input, output, session) {
   logfcRange <- reactiveValues() # min y max logfc
   res <- reactiveValues()
   
+  observeEvent(input$deseqFile, {
+      datos$dds <- readRDS(input$deseqFile$datapath)
+  })
+    
   observeEvent(datos$dds, {
     validate(need(datos$dds, ""))
     # if(!is(datos$dds, "DESeqDataSet") | !("results" %in% mcols(mcols(datos$dds))$type) ){
@@ -651,10 +660,6 @@ server <- function(input, output, session) {
         logfcRange$max <- max(res$sh$log2FoldChange)
         closeAlert(session, "fileAlert")
       }
-  })
-  
-  observeEvent(input$deseqFile, {
-    datos$dds <- readRDS(input$deseqFile$datapath)
   })
   
   observeEvent(input$runEnrich, {
@@ -730,13 +735,7 @@ server <- function(input, output, session) {
                 choices = nvars,
                 multiple = TRUE)
   })
-  # ui selector specie ####################
-  # output$specie <- renderUI({
-  #   validate(need(datos$dds, ""))
-  #   selectInput("specie", label = "Select specie",
-  #               choices = list("Human" = "Hs", "Mouse"="Mm"), 
-  #               selected = NULL)
-  # })
+  
   # ui selector logfc #######################
   output$logfc <- renderUI({
     validate(need(datos$dds, ""))
@@ -750,6 +749,24 @@ server <- function(input, output, session) {
   output$padj <- renderUI({
     validate(need(datos$dds,""))
     sliderInput("padj", label = "Select p-adjusted threshold", min = 0, max=0.2, value=0.05, step = 0.005 )
+  })
+  # infoboxes
+  output$allbox <- renderInfoBox({
+      validate(need(res$sh, ""))
+      numall <- nrow( res$sh[ ((res$sh$log2FoldChange >= logfc()[2] |
+                                    res$sh$log2FoldChange<= logfc()[1]) &
+                                   res$sh$padj <= padj() ),] ) 
+      infoBox("All DE genes", numall, icon = icon("arrows-alt-v"), color = "light-blue", fill = TRUE)
+  })
+  output$upbox <- renderInfoBox({
+      validate(need(res$sh, ""))
+      numup <- nrow( res$sh[(res$sh$log2FoldChange >= logfc()[2]) & (res$sh$padj <= padj()), ]) 
+      infoBox("Up-regulated genes", numup, icon = icon("thumbs-up", lib = "glyphicon"), color = "light-blue", fill=TRUE)
+  })
+  output$downbox <- renderInfoBox({
+      validate(need(res$sh, ""))
+      numdown <- nrow( res$sh[(res$sh$log2FoldChange <= logfc()[1]) & (res$sh$padj <= padj()), ]) 
+      infoBox("Down-regulated genes", numdown, icon = icon("thumbs-down", lib = "glyphicon"), color = "light-blue", fill=TRUE)
   })
   # preview samples ###################
   output$samples <- DT::renderDataTable(server = TRUE,{
@@ -776,7 +793,7 @@ server <- function(input, output, session) {
     validate(need(res$sh, "Load file to render table"))
     res.sh <- res$sh
     res.sh <- res.sh[ ((res.sh$log2FoldChange >= logfc()[2] |
-                          res.sh$log2FoldChange< logfc()[1]) &
+                          res.sh$log2FoldChange<= logfc()[1]) &
                          res.sh$padj <= padj() ),]
     datatable( res.sh, extensions = "Buttons", escape = FALSE,
                rownames = FALSE,
@@ -856,7 +873,7 @@ server <- function(input, output, session) {
     validate(need(kgg$all, "Load file to render BarPlot"))
     rowsAll <- rowsAll()
     if(is.null( rowsAll )){ rowsAll <- c(1:10) }
-    plotKegg(enrichdf = kgg$all[rowsAll,], nrows = length(rowsAll ))
+    plotKeggAll(enrichdf = kgg$all[rowsAll,], nrows = length(rowsAll ))
   })
   # KEGG chordiag plot All ###############
   output$keggChordAll <- renderChorddiag({
@@ -995,7 +1012,7 @@ server <- function(input, output, session) {
     bprowsall <- bprowsall()
     if(is.null(bprowsall)){bprowsall <- c(1:10)}
     gosBP <- go$all[go$all$Ont=="BP",]
-    plotGO(enrichdf = gosBP[bprowsall, ], nrows = length(bprowsall), ont="BP")
+    plotGOAll(enrichdf = gosBP[bprowsall, ], nrows = length(bprowsall), ont="BP")
   })
   # GO BP dotplot all ################### 
   output$BPDotall <- renderPlot({
@@ -1025,7 +1042,7 @@ server <- function(input, output, session) {
     mfrowsall <- mfrowsall()
     if(is.null(mfrowsall)){mfrowsall <- c(1:10)}
     gosMF <- go$all[go$all$Ont=="MF",]
-    plotGO(enrichdf = gosMF[mfrowsall, ], nrows = length(mfrowsall), ont = "MF")
+    plotGOAll(enrichdf = gosMF[mfrowsall, ], nrows = length(mfrowsall), ont = "MF")
   })
   # GO MF dotplot all ################### 
   output$MFDotall <- renderPlot({
@@ -1055,7 +1072,7 @@ server <- function(input, output, session) {
     ccrowsall <- ccrowsall()
     if(is.null(ccrowsall)){ccrowsall <- c(1:10)}
     gosCC <- go$all[go$all$Ont=="CC",]
-    plotGO(enrichdf = gosCC[ccrowsall,], nrows = length(ccrowsall), ont="CC")
+    plotGOAll(enrichdf = gosCC[ccrowsall,], nrows = length(ccrowsall), ont="CC")
   })
   # GO CC dotplot all ################### 
   output$CCDotall <- renderPlot({
