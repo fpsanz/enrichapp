@@ -754,7 +754,7 @@ server <- function(input, output, session) {
   output$allbox <- renderInfoBox({
       validate(need(res$sh, ""))
       numall <- nrow( res$sh[ ((res$sh$log2FoldChange >= logfc()[2] |
-                                    res$sh$log2FoldChange<= logfc()[1]) &
+                                    res$sh$log2FoldChange< logfc()[1]) &
                                    res$sh$padj <= padj() ),] ) 
       infoBox("All DE genes", numall, icon = icon("arrows-alt-v"), color = "light-blue", fill = TRUE)
   })
@@ -793,7 +793,7 @@ server <- function(input, output, session) {
     validate(need(res$sh, "Load file to render table"))
     res.sh <- res$sh
     res.sh <- res.sh[ ((res.sh$log2FoldChange >= logfc()[2] |
-                          res.sh$log2FoldChange<= logfc()[1]) &
+                          res.sh$log2FoldChange< logfc()[1]) &
                          res.sh$padj <= padj() ),]
     datatable( res.sh, extensions = "Buttons", escape = FALSE,
                rownames = FALSE,
@@ -873,7 +873,8 @@ server <- function(input, output, session) {
     validate(need(kgg$all, "Load file to render BarPlot"))
     rowsAll <- rowsAll()
     if(is.null( rowsAll )){ rowsAll <- c(1:10) }
-    plotKeggAll(enrichdf = kgg$all[rowsAll,], nrows = length(rowsAll ))
+    plotKeggAll(enrichdf = kgg$all[rowsAll,], nrows = length(rowsAll ),
+                genesUp = data$genesUp, genesDown = data$genesDown)
   })
   # KEGG chordiag plot All ###############
   output$keggChordAll <- renderChorddiag({
@@ -1012,7 +1013,8 @@ server <- function(input, output, session) {
     bprowsall <- bprowsall()
     if(is.null(bprowsall)){bprowsall <- c(1:10)}
     gosBP <- go$all[go$all$Ont=="BP",]
-    plotGOAll(enrichdf = gosBP[bprowsall, ], nrows = length(bprowsall), ont="BP")
+    plotGOAll(enrichdf = gosBP[bprowsall, ], nrows = length(bprowsall), ont="BP", 
+              genesUp = data$genesUp, genesDown = data$genesDown)
   })
   # GO BP dotplot all ################### 
   output$BPDotall <- renderPlot({
@@ -1042,7 +1044,8 @@ server <- function(input, output, session) {
     mfrowsall <- mfrowsall()
     if(is.null(mfrowsall)){mfrowsall <- c(1:10)}
     gosMF <- go$all[go$all$Ont=="MF",]
-    plotGOAll(enrichdf = gosMF[mfrowsall, ], nrows = length(mfrowsall), ont = "MF")
+    plotGOAll(enrichdf = gosMF[mfrowsall, ], nrows = length(mfrowsall), ont = "MF",
+              genesUp = data$genesUp, genesDown = data$genesDown)
   })
   # GO MF dotplot all ################### 
   output$MFDotall <- renderPlot({
@@ -1072,7 +1075,8 @@ server <- function(input, output, session) {
     ccrowsall <- ccrowsall()
     if(is.null(ccrowsall)){ccrowsall <- c(1:10)}
     gosCC <- go$all[go$all$Ont=="CC",]
-    plotGOAll(enrichdf = gosCC[ccrowsall,], nrows = length(ccrowsall), ont="CC")
+    plotGOAll(enrichdf = gosCC[ccrowsall,], nrows = length(ccrowsall), ont="CC",
+              genesUp = data$genesUp, genesDown = data$genesDown)
   })
   # GO CC dotplot all ################### 
   output$CCDotall <- renderPlot({

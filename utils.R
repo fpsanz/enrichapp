@@ -810,7 +810,7 @@ plotGO <- function(enrichdf, nrows = 30, orderby=NULL, ont){
     return(p)
 }
 # Plot barras de GOAll ####################
-plotGOAll <- function(enrichdf, nrows = 30, orderby=NULL, ont){
+plotGOAll <- function(enrichdf, nrows = 30, orderby=NULL, ont, genesUp = NULL, genesDown = NULL){
     require(plotly)
     require(ggplot2)
     if(!is.data.frame(enrichdf)){
@@ -873,7 +873,7 @@ plotKegg <- function(enrichdf, nrows = 30, orderby=NULL){
 }
 
 # Plot barras de KeggALL ###################
-plotKeggAll <- function(enrichdf, nrows = 30, orderby = NULL){
+plotKeggAll <- function(enrichdf, nrows = 30, orderby = NULL, genesUp = NULL, genesDown = NULL){
     require(plotly)
     require(ggplot2)
         if(!is.data.frame(enrichdf)){
