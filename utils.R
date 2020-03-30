@@ -1126,7 +1126,7 @@ buildKeggDataset <- function(specie="mmu"){
   dataSet <- left_join(GeneID.PathID, PathName, by = c("PathwayID"="PathwayID"))
   dataSet$Id <- gsub("path:","",dataSet$Id)
   dataSet <- dataSet[,c(4,1)]
-  saveRDS(dataSet,"resources/keggDataGSEA.Rds")
+  saveRDS(dataSet,paste0("resources/",specie,"keggDataGSEA.Rds"))
   }
 
 # Función para hacer GSEA pathway #################################
@@ -1518,8 +1518,8 @@ MA <- function (data, fdr = 0.05, fcDOWN = -1, fcUP = 1, genenames = NULL, detec
   else if (length(genenames) != nrow(data)) 
     stop("genenames should be of length nrow(data).")
   sig <- rep(3, nrow(data))
-  sig[which(data$padj <= fdr & data$log2FoldChange < 0 & data$log2FoldChange <= log2(as.numeric(fcDOWN)) & detection_call == 1)] = 2
-  sig[which(data$padj <= fdr & data$log2FoldChange > 0 & data$log2FoldChange >= log2(as.numeric(fcUP)) & detection_call == 1)] = 1
+  sig[which(data$padj <= fdr & data$log2FoldChange < 0 & data$log2FoldChange <= (as.numeric(fcDOWN)) & detection_call == 1)] = 2
+  sig[which(data$padj <= fdr & data$log2FoldChange > 0 & data$log2FoldChange >= (as.numeric(fcUP)) & detection_call == 1)] = 1
   data <- data.frame(name = genenames, mean = data$baseMean, lfc = data$log2FoldChange, padj = data$padj, sig = sig)
   . <- NULL
   data$sig <- as.factor(data$sig)
@@ -1561,7 +1561,7 @@ MA <- function (data, fdr = 0.05, fcDOWN = -1, fcUP = 1, genenames = NULL, detec
   }
   p <- p + scale_x_continuous(breaks = seq(0, max(log2(data$mean + 
                                                          1)), 2)) + labs(x = xlab, y = ylab, title = main, color = "") + 
-    geom_hline(yintercept = c(0, -log2(fcDOWN), log2(fcUP)), linetype = c(1, 2, 2), color = c("black", "black", "black"))
+    geom_hline(yintercept = c(0, (fcDOWN), (fcUP)), linetype = c(1, 2, 2), color = c("black", "black", "black"))
   p <- ggpar(p, palette = palette, ggtheme = ggtheme, ...)
   return(p)
 }
