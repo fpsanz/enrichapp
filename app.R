@@ -847,7 +847,7 @@ server <- function(input, output, session) {
     validate(need(res$sh, "Load file to render plot"))
     validate(need(logfc(), ""))
     MA(res$sh, main = expression("SOCS3" %->% "GFP"),
-       fdr = padj(), fcDOWN = logfc()[1], fcUP = logfc()[2] , size = 0.3,
+       fdr = padj(), fcDOWN = logfc()[1], fcUP = logfc()[2] , size = 0.5,
        palette = c("#B31B21", "#1465AC", "darkgray"),
        genenames = res$sh$GeneName_Symbol,
        legend = "top", top = 15, select.top.method = c('padj','fc'),
