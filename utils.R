@@ -1565,3 +1565,94 @@ MA <- function (data, fdr = 0.05, fcDOWN = -1, fcUP = 1, genenames = NULL, detec
   p <- ggpar(p, palette = palette, ggtheme = ggtheme, ...)
   return(p)
 }
+
+
+# VST ###############
+
+VST <- function (object, blind = TRUE, nsub = 1000, fitType = "parametric") 
+{
+  if (nrow(object) < nsub) {
+    stop("less than 'nsub' rows,\n  it is recommended to use varianceStabilizingTransformation directly")
+  }
+  if (is.null(colnames(object))) {
+    colnames(object) <- seq_len(ncol(object))
+  }
+  if (is.matrix(object)) {
+    matrixIn <- TRUE
+    object <- DESeqDataSetFromMatrix(object, DataFrame(row.names = colnames(object)), 
+                                     ~1)
+  }
+  else {
+    if (blind) {
+      design(object) <- ~1
+    }
+    matrixIn <- FALSE
+  }
+  if (is.null(sizeFactors(object)) & is.null(normalizationFactors(object))) {
+    object <- estimateSizeFactors(object)
+  }
+  baseMean <- rowMeans(counts(object, normalized = TRUE))
+  if (sum(baseMean > 5) < nsub) {
+    stop("less than 'nsub' rows with mean normalized count > 5, \n  it is recommended to use varianceStabilizingTransformation directly")
+  }
+  object.sub <- object[baseMean > 5, ]
+  baseMean <- baseMean[baseMean > 5]
+  o <- order(baseMean)
+  idx <- o[round(seq(from = 1, to = length(o), length = nsub))]
+  object.sub <- object.sub[idx, ]
+  object.sub <- estimateDispersionsGeneEst(object.sub, quiet = TRUE)
+  object.sub <- estimateDispersionsFit(object.sub, fitType = fitType, 
+                                       quiet = TRUE)
+  suppressMessages({
+    dispersionFunction(object) <- dispersionFunction(object.sub)
+  })
+  vsd <- varianceStabilizingTransformation(object, blind = FALSE)
+  if (matrixIn) {
+    return(assay(vsd))
+  }
+  else {
+    return(vsd)
+  }
+}
+
+# Heatmap #############
+
+heat <- function (data, n = 20, intgroup = "condition") 
+{
+vsd <- vst(data)
+topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), n)
+mat  <- assay(vsd)[ topVarGenes, ]
+mat  <- mat - rowMeans(mat)
+if (!all(intgroup %in% names(colData(data)))) {
+  stop("the argument 'intgroup' should specify columns of colData(dds)")
+}
+df <- as.data.frame(colData(data)[, intgroup, drop = FALSE])
+pheatmap(mat, cluster_rows=TRUE, cluster_cols=TRUE, show_colnames=TRUE, show_rownames = TRUE, annotation_col = df)
+}
+
+
+# cluster #############
+
+cluster <- function(data, intgroup = "condition")
+  {
+  vsd <- vst(data)
+  sampleDists_vsd <- dist(t(assay(vsd)))
+  sampleDistMatrix_vsd <- as.matrix( sampleDists_vsd )
+  rownames(sampleDistMatrix_vsd) <- vsd$intgroup
+  colnames(sampleDistMatrix_vsd) <- vsd$intgroup
+  colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+  pheatmap(sampleDistMatrix_vsd,
+           clustering_distance_rows = sampleDists_vsd,
+           clustering_distance_cols = sampleDists_vsd,
+           col = colors, main = 'Heatmap clustering')
+}
+
+
+
+
+
+
+
+
+
+

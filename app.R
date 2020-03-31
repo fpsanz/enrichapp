@@ -7,6 +7,7 @@ library(EnsDb.Hsapiens.v86)
 library(limma)
 library(tidyverse)
 library(DT)
+library(RColorBrewer)
 library(purrr)
 library(plotly)
 library(ggpubr)
@@ -17,10 +18,11 @@ library(shinyalert)
 library(shinyBS)
 library(shinyWidgets)
 library(shinydashboardPlus)
+library(pheatmap)
 source("utils.R")
 options(shiny.maxRequestSize = 3000*1024^2)
 
-### HEADER ############
+### HEADER ############ 
 header <- dashboardHeader(title = "RNAseq viewer and report App", 
                           titleWidth = 300, 
                           dropdownMenuOutput("messageMenu"),
@@ -127,13 +129,13 @@ body <- dashboardBody(
             ), # fin fluidrow boxinfos
             fluidRow( 
               column(width = 2, uiOutput("sampleGroup")),
-              #column(width = 2, uiOutput("specie")),
-              column(width = 3, offset = 1, uiOutput("logfc")),
-              column(width = 4, uiOutput("padj")),
+              column(width = 2, uiOutput("samplesName")),
+              column(width = 3, uiOutput("logfc")),
+              column(width = 3, uiOutput("padj")),
               column(width = 2, strong("Click to compute enrichment"), actionButton("runEnrich", "Apply values"))
             ),
             hr(),
-            fluidRow(column(width = 8,
+            fluidRow(column(width = 12,
                             offset = 2,
                             circleButton(inputId = "info1", icon = icon("info"),
                                          size="xs", status = "primary"),
@@ -165,19 +167,27 @@ body <- dashboardBody(
             hr(),
             h3("Expression Plots"),
             fluidRow(column(
-              width = 5,
-              plotOutput("volcano", height = "600px")),
+              width = 6,
+              plotOutput("pca", height = "600px")),
             column(
-              width = 7,
-              plotOutput("MA", height = "600px"))
+              width = 6,
+              plotOutput("heat", height = "600px"))
             ),
             hr(),
-            h3("PCA"),
             fluidRow(column(
-              width = 8,
-              offset = 2,
-              plotOutput("pca", height = "600px")
-              )
+              width = 6,
+              plotOutput("cluster", height = "600px")),
+              column(
+                width = 6,
+                plotOutput("", height = "600px"))
+            ),
+            hr(),
+            fluidRow(column(
+              width = 6,
+              plotOutput("volcano", height = "600px")),
+              column(
+                width = 6,
+                plotOutput("MA", height = "600px"))
             ),
             fluidRow(
                 column(width = 12,
@@ -225,7 +235,8 @@ body <- dashboardBody(
                   column(
                     align = "center",
                     offset = 2,
-                    chorddiagOutput("keggChordAll", width = "700px", height = "700px"),
+                    chorddiagOutput("keggChordAll", 
+                    width = "700px", height = "700px"),
                     width = 8
                   )),
                 hr(),
@@ -285,7 +296,8 @@ body <- dashboardBody(
                   column(
                     align = "center",
                     offset = 2,
-                    chorddiagOutput("keggChord", width = "700px", height = "700px"),
+                    chorddiagOutput("keggChord", 
+                    width = "700px", height = "700px"),
                     width = 8
                   )),
                 hr(),
@@ -705,6 +717,7 @@ server <- function(input, output, session) {
   ccrowsdown <- reactive({input$tableCCdown_rows_selected})
   
   variables <- reactive({input$variables})
+  samplename <- reactive({input$samplename})
   gsearow <- reactive({input$gseaTable_rows_selected})
   specie <- reactive({input$specie})
   padj <- reactive({input$padj})
@@ -731,9 +744,21 @@ server <- function(input, output, session) {
       as.data.frame() %>% 
       select(-c(sizeFactor,replaceable)) %>% 
       names()
-    selectInput("variables", label="Select condition[s] to plot PCA",
+    selectInput("variables", label="Select condition[s] for PCA - Heatmap",
                 choices = nvars,
                 multiple = TRUE)
+  })
+  
+  # ui selector sample name ###################
+  output$samplesName <- renderUI({
+    validate(need(datos$dds, ""))
+    nvars <- colData(datos$dds) %>% 
+      as.data.frame() %>% 
+      select(-c(sizeFactor,replaceable)) %>% 
+      names()
+    selectInput("samplename", label="Select sample name",
+                choices = nvars,
+                multiple = FALSE)
   })
   
   # ui selector logfc #######################
@@ -748,7 +773,7 @@ server <- function(input, output, session) {
   # ui selector padj #############################
   output$padj <- renderUI({
     validate(need(datos$dds,""))
-    sliderInput("padj", label = "Select p-adjusted threshold", min = 0, max=0.2, value=0.05, step = 0.005 )
+    sliderInput("padj", label = "Select p-adjusted threshold (corrected p-value)", min = 0, max=0.2, value=0.05, step = 0.005 )
   })
   # infoboxes
   output$allbox <- renderInfoBox({
@@ -846,7 +871,7 @@ server <- function(input, output, session) {
     validate(need(datos$dds, ""))
     validate(need(res$sh, "Load file to render plot"))
     validate(need(logfc(), ""))
-    MA(res$sh, main = expression("SOCS3" %->% "GFP"),
+    MA(res$sh, main = 'MA plot',
        fdr = padj(), fcDOWN = logfc()[1], fcUP = logfc()[2] , size = 0.5,
        palette = c("#B31B21", "#1465AC", "darkgray"),
        genenames = res$sh$GeneName_Symbol,
@@ -857,6 +882,20 @@ server <- function(input, output, session) {
        cex.axis = 1.1, cex.lab = 1.3,
        ggtheme = theme_classic()
     )
+  })
+  # view heatmap data ###################
+  output$heat <- renderPlot( {
+    validate(need(datos$dds, ""))
+    validate(need(res$sh, "Load file to render plot"))
+    validate(need(variables(),"Load condition to render plot" ) )
+    heat(datos$dds, n=25, intgroup = variables())
+  })
+  # view cluster data ###################
+  output$cluster <- renderPlot( {
+    validate(need(datos$dds, ""))
+    validate(need(res$sh, "Load file to render plot"))
+    validate(need(samplename(),"Load condition to render plot" ) )
+    cluster(datos$dds, intgroup = samplename())
   })
   # KEGG table All #####################################
   output$tableAll <- DT::renderDT(server=TRUE,{
@@ -1328,6 +1367,7 @@ server <- function(input, output, session) {
       mfnrdown <- mfrowsdown()
       ccnrdown <- ccrowsdown()
       variablepca <- variables()
+      samplecluster <- samplename()
       gseanr <- gsearow()
       bpnrall <- bprowsall()
       mfnrall <- mfrowsall()
@@ -1359,9 +1399,10 @@ server <- function(input, output, session) {
                                             1:dim(goDT$all[goDT$all$Ont=="CC", ])[1] else c(1:10))}
       
       if(is.null(variablepca)){variablepca=NULL}
+      if(is.null(samplecluster)){samplecluster=NULL}
       params <- list(nrup=nrup, nrdown=nrdown, bpnrup=bpnrup, bpnrdown=bpnrdown,
                      mfnrup=mfnrup, mfnrdown=mfnrdown, ccnrup=ccnrup, ccnrdown=ccnrdown,
-                     variablepca=variablepca, tempdir =tempdir(),
+                     variablepca=variablepca, samplecluster=samplecluster, tempdir =tempdir(),
                      gseanr=gseanr, author=author(), nrall = nrall,
                      bpnrall=bpnrall, mfnrall=mfnrall, ccnrall=ccnrall,
                      explainPreview=explainPreview(), biologicalText=biologicalText(),
