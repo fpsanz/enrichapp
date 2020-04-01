@@ -842,10 +842,12 @@ plotGOAll <- function(enrichdf, nrows = 30, orderby=NULL, ont, genesUp = NULL, g
     )
     colorfill <- c(dataTitle[[ont]][2:3])
     p <- ggplot(df, aes(x = goId, y = DE, fill = Regulation)) +
-        geom_bar(stat = "identity", position = "identity") + coord_flip() +
+        geom_bar(stat = "identity", position = "identity") + 
+        scale_y_continuous(breaks= scales::pretty_breaks()) +coord_flip() +
         theme(axis.text.y = element_text(angle = 0, hjust = 1)) +
         theme(axis.title.y = element_blank()) + theme(legend.position = "none") +
-        scale_fill_manual(values = colorfill)+theme_bw()
+        scale_fill_manual(values = colorfill)+theme_bw() +
+        
     p <- p %>% plotly::ggplotly()
     return(p)
 }
@@ -898,7 +900,8 @@ plotKeggAll <- function(enrichdf, nrows = 30, orderby = NULL, genesUp = NULL, ge
     )
     colorfill <- c("#9682ba", "#a4b880")
     p <- ggplot(df, aes(x = pathId, y = DE, fill = Regulation)) +
-        geom_bar(stat = "identity", position = "identity") + coord_flip() +
+        geom_bar(stat = "identity", position = "identity") + 
+        scale_y_continuous(breaks= scales::pretty_breaks()) + coord_flip() +
         theme(axis.text.y = element_text(angle = 0, hjust = 1)) +
         theme(axis.title.y = element_blank()) + theme(legend.position = "none") +
         scale_fill_manual(values = colorfill)
@@ -1567,8 +1570,7 @@ MA <- function (data, fdr = 0.05, fcDOWN = -1, fcUP = 1, genenames = NULL, detec
 }
 
 
-# VST ###############
-
+# VST ###############  SIN USO CREO !!!!!
 VST <- function (object, blind = TRUE, nsub = 1000, fitType = "parametric") 
 {
   if (nrow(object) < nsub) {
@@ -1617,29 +1619,32 @@ VST <- function (object, blind = TRUE, nsub = 1000, fitType = "parametric")
 
 # Heatmap #############
 
-heat <- function (data, n = 20, intgroup = "condition") 
+heat <- function (vsd, n = 40, intgroup = "condition", sampleName = "condition") 
 {
-vsd <- vst(data)
+#vsd <- vst(data)
 topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), n)
 mat  <- assay(vsd)[ topVarGenes, ]
 mat  <- mat - rowMeans(mat)
-if (!all(intgroup %in% names(colData(data)))) {
+if (!all(intgroup %in% names(colData(vsd)))) {
   stop("the argument 'intgroup' should specify columns of colData(dds)")
 }
-df <- as.data.frame(colData(data)[, intgroup, drop = FALSE])
-pheatmap(mat, cluster_rows=TRUE, cluster_cols=TRUE, show_colnames=TRUE, show_rownames = TRUE, annotation_col = df)
+df <- as.data.frame(colData(vsd)[, intgroup, drop = FALSE])
+pheatmap(mat, cluster_rows=TRUE, cluster_cols=TRUE,
+         show_colnames=TRUE, show_rownames = TRUE, annotation_col = df,
+         labels_col = as.character(vsd[[sampleName]]), 
+         main = "Heatmap top genes")
 }
 
 
 # cluster #############
 
-cluster <- function(data, intgroup = "condition")
+cluster <- function(vsd, intgroup = "condition")
   {
-  vsd <- vst(data)
+  #vsd <- vst(data)
   sampleDists_vsd <- dist(t(assay(vsd)))
   sampleDistMatrix_vsd <- as.matrix( sampleDists_vsd )
-  rownames(sampleDistMatrix_vsd) <- vsd$intgroup
-  colnames(sampleDistMatrix_vsd) <- vsd$intgroup
+  rownames(sampleDistMatrix_vsd) <- vsd[[intgroup]]
+  colnames(sampleDistMatrix_vsd) <- vsd[[intgroup]]
   colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
   pheatmap(sampleDistMatrix_vsd,
            clustering_distance_rows = sampleDists_vsd,

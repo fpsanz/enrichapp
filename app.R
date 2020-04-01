@@ -174,12 +174,15 @@ body <- dashboardBody(
               plotOutput("top6", height = "600px"))
             ),
             hr(),
+            fluidRow(column(width=4, offset = 6, 
+                            sliderInput("numheatmap", label =NULL,
+                                        min = 5, max=40, value=20, step=1))),
             fluidRow(column(
               width = 6,
               plotOutput("cluster", height = "600px")),
               column(
                 width = 6,
-                plotOutput("heat", height = "600px"))
+              plotOutput("heat", height = "600px"))
             ),
             hr(),
             fluidRow(column(
@@ -637,7 +640,7 @@ server <- function(input, output, session) {
   gsea <- reactiveValues() # objeto GSEA
   logfcRange <- reactiveValues() # min y max logfc
   res <- reactiveValues()
-  
+  vsd <- reactiveValues()
   observeEvent(input$deseqFile, {
       datos$dds <- readRDS(input$deseqFile$datapath)
   })
@@ -667,7 +670,7 @@ server <- function(input, output, session) {
         links = paste0("<a href='http://www.ensembl.org/",spc,",/Gene/Summary?db=core;g=",
                        rownames(res$sh),"' target='_blank'>",rownames(res$sh),"</a>")
         res$sh <- cbind(`GeneName_Ensembl`= links, res$sh)
-        
+        vsd$data <- vst(datos$dds)
         logfcRange$min <- min(res$sh$log2FoldChange)
         logfcRange$max <- max(res$sh$log2FoldChange)
         closeAlert(session, "fileAlert")
@@ -727,7 +730,7 @@ server <- function(input, output, session) {
   explainPreview <- reactive({input$explainPreview})
   keggAllText <- reactive({input$keggAllText})
   specie <- reactive({input$specie})
-  
+  numheatmap <- reactive({input$numheatmap})
   # InputFile
   output$deseqFile <- renderUI({
       validate(need(specie(), ""))
@@ -886,16 +889,17 @@ server <- function(input, output, session) {
   # view heatmap data ###################
   output$heat <- renderPlot( {
     validate(need(datos$dds, ""))
-    validate(need(res$sh, "Load file to render plot"))
+    validate(need(vsd$data, "Load file to render plot"))
     validate(need(variables(),"Load condition to render plot" ) )
-    heat(datos$dds, n=25, intgroup = variables())
+    validate(need(samplename(),"Load condition to render plot" ) )
+    heat(vsd$data, n=numheatmap(), intgroup = variables(), sampleName = samplename() )
   })
   # view cluster data ###################
   output$cluster <- renderPlot( {
     validate(need(datos$dds, ""))
-    validate(need(res$sh, "Load file to render plot"))
+    validate(need(vsd$data, "Load file to render plot"))
     validate(need(samplename(),"Load condition to render plot" ) )
-    cluster(datos$dds, intgroup = samplename())
+    cluster(vsd$data, intgroup = samplename())
   })
   # view top6 data ###################
   output$top6 <- renderPlot( {
