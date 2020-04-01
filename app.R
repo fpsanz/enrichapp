@@ -171,7 +171,7 @@ body <- dashboardBody(
               plotOutput("pca", height = "600px")),
             column(
               width = 6,
-              plotOutput("heat", height = "600px"))
+              plotOutput("top6", height = "600px"))
             ),
             hr(),
             fluidRow(column(
@@ -179,7 +179,7 @@ body <- dashboardBody(
               plotOutput("cluster", height = "600px")),
               column(
                 width = 6,
-                plotOutput("", height = "600px"))
+                plotOutput("heat", height = "600px"))
             ),
             hr(),
             fluidRow(column(
@@ -897,6 +897,24 @@ server <- function(input, output, session) {
     validate(need(samplename(),"Load condition to render plot" ) )
     cluster(datos$dds, intgroup = samplename())
   })
+  # view top6 data ###################
+  output$top6 <- renderPlot( {
+    validate(need(datos$dds, ""))
+    validate(need(res$sh, "Load file to render plot"))
+    validate(need(variables(),"Load condition to render plot" ) )
+    
+    topGenes <- rownames(res$sh)[order(res$sh$padj)][1:6]
+    
+    z <- lapply(topGenes, function(x) plotCounts(dds=datos$dds, gene=x, res=res$sh, intgroup = c('AAV'), returnData = TRUE))
+    for(i in 1:6) z[[i]]$gene <- rep(topGenes[i], nrow(colData(datos$dds)))
+    z <- do.call(rbind, z)
+    
+    ggplot(z, aes(AAV, count, colour = AAV)) + 
+      scale_y_log10() +
+      geom_point(position = position_jitter(width = 0.1, height = 0), size = 2) +
+      facet_wrap(~gene) + scale_color_manual(values = c("#008000","#800080")) +
+      ggtitle("Top 6 most significant gene")
+    })
   # KEGG table All #####################################
   output$tableAll <- DT::renderDT(server=TRUE,{
     validate(need(kgg$all, "Load file to render table"))

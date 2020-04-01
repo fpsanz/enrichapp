@@ -1652,6 +1652,63 @@ cluster <- function(data, intgroup = "condition")
 
 
 
+#############  TOP6 genes #########################
+
+
+plotCountsSymbol <- function (dds, gene, res, intgroup = "condition", normalized = TRUE,
+                              transform = TRUE, main, xlab = "group", returnData = FALSE,
+                              replaced = FALSE, pc, ...)
+{
+  stopifnot(length(gene) == 1 & (is.character(gene) | (is.numeric(gene) &
+                                                         (gene >= 1 & gene <= nrow(dds)))))
+  if (!all(intgroup %in% names(colData(dds))))
+    stop("all variables in 'intgroup' must be columns of colData")
+  if (!returnData) {
+    if (!all(sapply(intgroup, function(v) is(colData(dds)[[v]],
+                                             "factor")))) {
+      stop("all variables in 'intgroup' should be factors, or choose returnData=TRUE and plot manually")
+    }
+  }
+  if (missing(pc)) {
+    pc <- if (transform)
+      0.5
+    else 0
+  }
+  if (is.null(sizeFactors(dds)) & is.null(normalizationFactors(dds))) {
+    dds <- estimateSizeFactors(dds)
+  }
+  cnts <- counts(dds, normalized = normalized, replaced = replaced)[gene,
+                                                                    ]
+  group <- if (length(intgroup) == 1) {
+    colData(dds)[[intgroup]]
+  }
+  else if (length(intgroup) == 2) {
+    lvls <- as.vector(t(outer(levels(colData(dds)[[intgroup[1]]]),
+                              levels(colData(dds)[[intgroup[2]]]), function(x,
+                                                                            y) paste(x, y, sep = ":"))))
+    droplevels(factor(apply(as.data.frame(colData(dds)[,
+                                                       intgroup, drop = FALSE]), 1, paste, collapse = ":"),
+                      levels = lvls))
+  }
+  else {
+    factor(apply(as.data.frame(colData(dds)[, intgroup,
+                                            drop = FALSE]), 1, paste, collapse = ":"))
+  }
+  data <- data.frame(count = cnts + pc, group = as.integer(group))
+  logxy <- if (transform)
+    "y"
+  else ""
+  ylab <- ifelse(normalized, "normalized counts")
+  colors = c("#008000","#800080")
+  if (returnData)
+    return(data.frame(count = data$count, colData(dds)[intgroup]))
+  plot(data$group + runif(ncol(dds), -0.05, 0.05), data$count, col=colors[dds$AAV],
+       xlim = c(0.5, max(data$group) + 0.5), log = logxy, xaxt = "n",
+       xlab = xlab, ylab = ylab, main = "Top 6 significant gene", ...)
+  axis(1, at = seq_along(levels(group)), levels(group))
+  #text(data$group + runif(ncol(dds), -0.05, 0.05), data$count, labels=colnames(dds))
+}
+
 
 
 
