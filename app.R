@@ -154,7 +154,9 @@ body <- dashboardBody(
               column(
                 width = 8,
                 offset = 2,
-                dataTableOutput("samples"),
+                circleButton(inputId = "rolltable1", icon = icon("plus-circle"),
+                             size="xs", status = "default"),
+                DTOutput("samples"),
               )
             ),
             hr(),
@@ -163,8 +165,8 @@ body <- dashboardBody(
               column(
                 width = 8,
                 offset = 2,
-                circleButton(inputId = "rolltable", icon = icon("plus-circle"),
-                size="xs", status = "default"),
+                circleButton(inputId = "rolltable2", icon = icon("plus-circle"),
+                             size="xs", status = "default"),
                 DTOutput("preview")
               )
             ),
@@ -179,7 +181,7 @@ body <- dashboardBody(
             ),
             hr(),
             fluidRow(column(width=4, offset = 6, 
-                            sliderInput("numheatmap", label =NULL,
+                            sliderInput("numheatmap", label ="Select number of genes",
                                         min = 5, max=40, value=20, step=1))),
             fluidRow(column(
               width = 6,
@@ -703,7 +705,10 @@ server <- function(input, output, session) {
                imageUrl = "dna-svg-small-13.gif", 
                imageWidth = 200, imageHeight = 100)})
 # toggle para show/hide tabla preview ##############
-    observeEvent(input$rolltable, {
+    observeEvent(input$rolltable1, {
+        toggle(id = "samples")
+    })
+    observeEvent(input$rolltable2, {
         toggle(id = "preview")
     })
     
@@ -973,7 +978,7 @@ server <- function(input, output, session) {
     validate(need(vsd$data, "Load file to render plot"))
     validate(need(variables(),"Load condition to render plot" ) )
     validate(need(samplename(),"Load condition to render plot" ) )
-    heat(vsd$data, n=numheatmap(), intgroup = variables(), sampleName = samplename() )
+    heat(vsd$data, n=numheatmap(), intgroup = variables(), sampleName = samplename(), specie=specie())
   })
   # view cluster data ###################
   output$cluster <- renderPlot( {

@@ -959,7 +959,7 @@ plotPCA = function(object, intgroup = "condition", ntop = 500,
   select <- order(rv, decreasing = TRUE)[seq_len(min(ntop, length(rv)))]
   # perform a PCA on the data in assay(x) for the selected genes
   pca <- prcomp(t(assay(object)[select, ]))
-  # the contribution to the total variance for each component
+  # the contribution to   the total variance for each component
   percentVar <- pca$sdev ^ 2 / sum(pca$sdev ^ 2)
   if (!all(intgroup %in% names(colData(object)))) {
     stop("the argument 'intgroup' should specify columns of colData(dds)")
@@ -999,7 +999,7 @@ plotPCA = function(object, intgroup = "condition", ntop = 500,
   }
   # assembly the data for the plot
   
-  getPalette <- colorRampPalette(c("#008000","#800080"))
+  getPalette <- colorRampPalette(c("#f7837b","#1cc3c8"))
   colours <- getPalette(length(levels(d$group)))
   if (returnData) {
     attr(d, "percentVar") <- percentVar[1:2]
@@ -1530,7 +1530,7 @@ CustomVolcano <- function (toptable, lab, x, y, selectLab = NULL, xlim = c(min(t
 
 MA <- function (data, fdr = 0.05, fcDOWN = -1, fcUP = 1, genenames = NULL, detection_call = NULL, 
           size = NULL, font.label = c(12, "plain", "black"), label.rectangle = FALSE, 
-          palette = c("#B31B21", "#1465AC", "darkgray"), top = 15, 
+          palette = c("#f7837b", "#1cc3c8", "darkgray"), top = 15, 
           select.top.method = c("padj", "fc"), main = NULL, xlab = "Log2 mean expression", 
           ylab = "Log2 fold change", ggtheme = theme_classic(), ...) 
 {
@@ -1654,8 +1654,20 @@ VST <- function (object, blind = TRUE, nsub = 1000, fitType = "parametric")
 
 # Heatmap #############
 
-heat <- function (vsd, n = 40, intgroup = "condition", sampleName = "condition") 
+heat <- function (vsd, n = 40, intgroup = "condition", sampleName = "condition", specie="Mm") 
 {
+  require("EnsDb.Mmusculus.v79")
+  require("org.Mm.eg.db")
+  require("EnsDb.Hsapiens.v86")
+  require("org.Hs.eg.db")
+  if(specie=="Mm"){
+    ensdb <- EnsDb.Mmusculus.v79
+    orgdb <- org.Mm.eg.db
+  }
+  else{
+    ensdb <- EnsDb.Hsapiens.v86
+    orgdb <- org.Hs.eg.db
+  }
 #vsd <- vst(data)
 topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), n)
 mat  <- assay(vsd)[ topVarGenes, ]
@@ -1664,9 +1676,21 @@ if (!all(intgroup %in% names(colData(vsd)))) {
   stop("the argument 'intgroup' should specify columns of colData(dds)")
 }
 df <- as.data.frame(colData(vsd)[, intgroup, drop = FALSE])
+
+annot <- NULL
+annot$ENSEMBL <- rownames(mat)
+annot$SYMBOL <-  mapIds(ensdb, keys=rownames(mat), column="SYMBOL",keytype="GENEID")
+annot$SYMBOL1 <- mapIds(orgdb, keys = rownames(mat), column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first') 
+annot$description <- mapIds(orgdb, keys = rownames(mat), column = 'GENENAME', keytype = 'ENSEMBL', multiVals = 'first')
+annot <- as.data.frame(annot)
+consensus <- data.frame('Symbol'= ifelse(!is.na(annot$SYMBOL), as.vector(annot$SYMBOL),
+                                         ifelse(!is.na(annot$SYMBOL1),as.vector(annot$SYMBOL1),
+                                                as.vector(annot$ENSEMBL))), stringsAsFactors = F)
+
 pheatmap(mat, cluster_rows=TRUE, cluster_cols=TRUE,
          show_colnames=TRUE, show_rownames = TRUE, annotation_col = df,
-         labels_col = as.character(vsd[[sampleName]]), 
+         labels_col = as.character(vsd[[sampleName]]),
+         labels_row = as.character(consensus$Symbol),
          main = "Heatmap top genes")
 }
 
@@ -1738,10 +1762,10 @@ plotCountsSymbol <- function (dds, gene, res, intgroup = "condition", normalized
     "y"
   else ""
   ylab <- ifelse(normalized, "normalized counts")
-  colors = c("#008000","#800080")
+  #colors = c("#008000","#800080")
   if (returnData)
     return(data.frame(count = data$count, colData(dds)[intgroup]))
-  plot(data$group + runif(ncol(dds), -0.05, 0.05), data$count, col=colors[dds$AAV],
+  plot(data$group + runif(ncol(dds), -0.05, 0.05), data$count, #col=colors[(dds)[intergroup]],
        xlim = c(0.5, max(data$group) + 0.5), log = logxy, xaxt = "n",
        xlab = xlab, ylab = ylab, main = "Top 6 significant gene", ...)
   axis(1, at = seq_along(levels(group)), levels(group))
