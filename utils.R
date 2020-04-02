@@ -951,7 +951,8 @@ loadGenes <- function(filegenes){
 
 # PCA de un objeto DESeq #####################
 
-plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE){
+plotPCA = function(object, intgroup = "condition", ntop = 500,
+                   returnData = TRUE, labels = NULL){
   # calculate the variance for each gene
   rv <- rowVars(assay(object))
   # select the ntop genes by variance
@@ -981,7 +982,8 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
         group = colgroup,
         shape = shapegroup,
         intgroup.df,
-        name = colnames(object)
+        name = colnames(object),
+        labels = colData(object)[[labels]]
       )
   } else{
     colgroup <- factor(intgroup.df[ ,intgroup[1] ] )
@@ -991,7 +993,8 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
         PC2 = pca$x[, 2],
         group = colgroup,
         intgroup.df,
-        name = colnames(object)
+        name = colnames(object),
+        labels = colData(object)[[labels]]
       )
   }
   # assembly the data for the plot
@@ -1013,7 +1016,7 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
       scale_color_manual(values = colours, name = intgroup[1]) +
       scale_shape_manual(values = seq_len(length(d$shape)), name=intgroup[2] )+
       #coord_fixed() +
-      ggrepel::geom_text_repel(aes(label = paste("",d$name, sep = ""),
+      ggrepel::geom_text_repel(aes(label = labels, #paste("",d$name, sep = ""),
                                    size = "tam"),
                                show.legend = FALSE, size=3, nudge_y = 0.1) +
       # scale_size_manual("tam", c(1)) +
@@ -1027,7 +1030,7 @@ plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE
       ylab(paste0("PC2: ", round(percentVar[2] * 100), "% variance")) +
       scale_color_manual(values = colours, name = intgroup[1]) +
       #coord_fixed() +
-      ggrepel::geom_text_repel(aes(label = paste("",d$name, sep = ""),
+      ggrepel::geom_text_repel(aes(label = labels,# paste("",d$name, sep = ""),
                                    size = "tam"),
                                show.legend = FALSE, nudge_y = 0.1) +
       # scale_size_manual(labels = c("tam"), values = c(1)) +
@@ -1694,8 +1697,7 @@ cluster <- function(vsd, intgroup = "condition")
 
 plotCountsSymbol <- function (dds, gene, res, intgroup = "condition", normalized = TRUE,
                               transform = TRUE, main, xlab = "group", returnData = FALSE,
-                              replaced = FALSE, pc, ...)
-{
+                              replaced = FALSE, pc, ...){
   stopifnot(length(gene) == 1 & (is.character(gene) | (is.numeric(gene) &
                                                          (gene >= 1 & gene <= nrow(dds)))))
   if (!all(intgroup %in% names(colData(dds))))
@@ -1714,8 +1716,7 @@ plotCountsSymbol <- function (dds, gene, res, intgroup = "condition", normalized
   if (is.null(sizeFactors(dds)) & is.null(normalizationFactors(dds))) {
     dds <- estimateSizeFactors(dds)
   }
-  cnts <- counts(dds, normalized = normalized, replaced = replaced)[gene,
-                                                                    ]
+  cnts <- counts(dds, normalized = normalized, replaced = replaced)[gene,]
   group <- if (length(intgroup) == 1) {
     colData(dds)[[intgroup]]
   }
@@ -1731,6 +1732,7 @@ plotCountsSymbol <- function (dds, gene, res, intgroup = "condition", normalized
     factor(apply(as.data.frame(colData(dds)[, intgroup,
                                             drop = FALSE]), 1, paste, collapse = ":"))
   }
+  #rownames(cnts) <- res$GeneName_Symbol
   data <- data.frame(count = cnts + pc, group = as.integer(group))
   logxy <- if (transform)
     "y"

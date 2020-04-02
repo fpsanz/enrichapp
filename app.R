@@ -930,7 +930,8 @@ server <- function(input, output, session) {
   output$pca <- renderPlot( {
     validate(need(datos$dds, "Load file and condition to render PCA"))
     validate(need(variables(),"Load condition to render PCA" ) )
-    plotPCA(rlog(datos$dds), intgroup = variables() )+
+    validate(need(samplename(),"" ) )
+    plotPCA(rlog(datos$dds), intgroup = variables(), labels = samplename() )+
       theme(plot.margin=unit(c(0.5,0.5,0.5,0.5),"cm"))+
         scale_size_manual(values = 4) +
     theme(text = element_text(size=16))
@@ -981,25 +982,28 @@ server <- function(input, output, session) {
     validate(need(samplename(),"Load condition to render plot" ) )
     cluster(vsd$data, intgroup = samplename())
   })
-  # view top6 data ###################
+# view top6 data ###################
   output$top6 <- renderPlot( {
     validate(need(datos$dds, ""))
     validate(need(res$sh, "Load file to render plot"))
     validate(need(variables(),"Load condition to render plot" ) )
     
     topGenes <- rownames(res$sh)[order(res$sh$padj)][1:6]
-    
-    z <- lapply(topGenes, function(x) plotCounts(dds=datos$dds, gene=x, res=res$sh, intgroup = c('AAV'), returnData = TRUE))
+    topSymbol <- as.character(res$sh$GeneName_Symbol)[order(res$sh$padj)][1:6]
+    z <- lapply(topGenes, function(x) plotCounts(dds=datos$dds, gene=x,
+                                                 res=res$sh, intgroup = variables(),
+                                                 returnData = TRUE))
     for(i in 1:6) z[[i]]$gene <- rep(topGenes[i], nrow(colData(datos$dds)))
     z <- do.call(rbind, z)
+    z$symbol <- rep(topSymbol, each =(nrow(z)/6) ) 
     
-    ggplot(z, aes(AAV, count, colour = AAV)) + 
+    ggplot(z, aes_(as.name(variables()), ~count, colour = as.name(variables()))) + 
       scale_y_log10() +
       geom_point(position = position_jitter(width = 0.1, height = 0), size = 2) +
-      facet_wrap(~gene) + scale_color_manual(values = c("#008000","#800080")) +
+      facet_wrap(~symbol) +
       ggtitle("Top 6 most significant gene")
     })
-  # KEGG table All #####################################
+# KEGG table All #####################################
   output$tableAll <- DT::renderDT(server=TRUE,{
     validate(need(kgg$all, "Load file to render table"))
     datatable2(
@@ -1009,7 +1013,7 @@ server <- function(input, output, session) {
       escape = FALSE,
       opts = list(pageLength = 10, white_space = "normal"))
   }) 
-  # KEGG barplot All ################
+# KEGG barplot All ################
   output$keggPlotAll <- renderPlotly ({
     validate(need(kgg$all, "Load file to render BarPlot"))
     rowsAll <- rowsAll()
