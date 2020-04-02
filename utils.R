@@ -810,7 +810,8 @@ plotGO <- function(enrichdf, nrows = 30, orderby=NULL, ont){
     return(p)
 }
 # Plot barras de GOAll ####################
-plotGOAll <- function(enrichdf, nrows = 30, orderby=NULL, ont, genesUp = NULL, genesDown = NULL){
+plotGOAll <- function(enrichdf, nrows = 30, orderby=NULL,
+                      ont, genesUp = NULL, genesDown = NULL){
     require(plotly)
     require(ggplot2)
     if(!is.data.frame(enrichdf)){
@@ -819,9 +820,9 @@ plotGOAll <- function(enrichdf, nrows = 30, orderby=NULL, ont, genesUp = NULL, g
     if(!exists("ont") | !(ont %in% c("BP","MF","CC")) ){
         stop("A valid value should be provided for 'ont'")
     }
-    dataTitle <- list(BP=c("Biological Process", '#E27D60','#60c6e2'),
-                      MF=c("Molecular Function",'#6399b8', '#b47f61'),
-                      CC=c("Cellular Component", '#956ea8', '#99037b'))
+    dataTitle <- list(BP=c("Biological Process", '#3e90bd', "#eb3f3f"),
+                      MF=c("Molecular Function",'#3e90bd',"#eb3f3f"),
+                      CC=c("Cellular Component",'#3e90bd',"#eb3f3f" ))
     enrichdf <- enrichdf[enrichdf$Ont == ont, ]
     if(!is.null(orderby)){
         orderby = match.arg(orderby, c("DE", "P.DE", "N", "Term"))
@@ -829,29 +830,43 @@ plotGOAll <- function(enrichdf, nrows = 30, orderby=NULL, ont, genesUp = NULL, g
             enrichdf <- enrichdf %>% arrange(get(orderby))
         } else{ enrichdf <- enrichdf %>% arrange(desc(get(orderby)))}
     }
-    enrichAll <- enrichdf[1:nrows, ]
+    enrichAll <- enrichdf
     enrichAll <- enrichAll %>% rowwise() %>%
         mutate(numUp = length(which(strsplit(genes,", ")[[1]] %in% genesUp$ENTREZID ))) %>% 
-        mutate(numDown = -length(which(strsplit(genes,", ")[[1]] %in% genesDown$ENTREZID )))
-    enrichAll <- enrichAll %>% dplyr::select(go_id, numUp, numDown)
+        mutate(numDown = length(which(strsplit(genes,", ")[[1]] %in% genesDown$ENTREZID ))) %>% 
+        mutate(numDownNeg = -length(which(strsplit(genes,", ")[[1]] %in% genesDown$ENTREZID )))
+    enrichAll <- enrichAll %>% dplyr::select(go_id, numUp, numDown, numDownNeg)
     df <- data.frame(
         Regulation = rep(c("Up", "Down"), each = nrows),
         goId = enrichAll$go_id,
         x = rep(1:nrows, 2),
-        DE = c(enrichAll$numUp, enrichAll$numDown)
+        DE = c(enrichAll$numUp, enrichAll$numDown),
+        DENeg = c(enrichAll$numUp, enrichAll$numDownNeg)
     )
     colorfill <- c(dataTitle[[ont]][2:3])
-    p <- ggplot(df, aes(x = goId, y = DE, fill = Regulation)) +
-        geom_bar(stat = "identity", position = "identity") + 
-        scale_y_continuous(breaks= scales::pretty_breaks()) +coord_flip() +
-        theme(axis.text.y = element_text(angle = 0, hjust = 1)) +
-        theme(axis.title.y = element_blank()) + theme(legend.position = "none") +
-        scale_fill_manual(values = colorfill)+theme_bw() +
-        
-    p <- p %>% plotly::ggplotly()
-    return(p)
+    r <- ggplot(df, aes(x = goId, y = DENeg, fill = Regulation)) +
+        geom_bar(stat = "identity", position = "identity") + coord_flip() +
+        theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
+        scale_fill_manual(values = colorfill) +
+        theme(panel.grid.major.y  = element_blank(),
+              axis.title.y = element_blank())
+    r <- r %>% plotly::ggplotly()
+    p <- ggplot(df, aes(fill = Regulation, y = DE, x = goId)) +
+        geom_bar(position = "dodge", stat = "identity") + coord_flip() +
+        theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
+        scale_fill_manual(values = colorfill) +
+        theme(panel.grid.major.y  = element_blank(),
+              axis.title.y = element_blank())
+    p <- p %>% ggplotly()
+    q <- ggplot(df, aes(fill = Regulation, y = DE, x = goId)) +
+        geom_bar(position = "stack", stat = "identity") + coord_flip() +
+        theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
+        scale_fill_manual(values = colorfill) +
+        theme(panel.grid.major.y  = element_blank(),
+              axis.title.y = element_blank())
+    q <- q %>% ggplotly()
+    return(list(p,q,r) ) 
 }
-
 
 # Plot barras de Kegg ###########################
 plotKegg <- function(enrichdf, nrows = 30, orderby=NULL){
@@ -875,7 +890,8 @@ plotKegg <- function(enrichdf, nrows = 30, orderby=NULL){
 }
 
 # Plot barras de KeggALL ###################
-plotKeggAll <- function(enrichdf, nrows = 30, orderby = NULL, genesUp = NULL, genesDown = NULL){
+plotKeggAll <- function(enrichdf, nrows = 10, orderby = NULL, 
+                        genesUp = NULL, genesDown = NULL){
     require(plotly)
     require(ggplot2)
         if(!is.data.frame(enrichdf)){
@@ -887,29 +903,45 @@ plotKeggAll <- function(enrichdf, nrows = 30, orderby = NULL, genesUp = NULL, ge
             enrichdf <- enrichdf %>% arrange(get(orderby))
         } else{ enrichdf <- enrichdf %>% arrange(desc(get(orderby)))}
     }
-    enrichAll <- enrichdf[1:nrows, ]
+    enrichAll <- enrichdf
     enrichAll <- enrichAll %>% rowwise() %>%
         mutate(numUp = length(which(strsplit(genes,",")[[1]] %in% genesUp$ENTREZID ))) %>% 
-        mutate(numDown = -length(which(strsplit(genes,",")[[1]] %in% genesDown$ENTREZID )))
-    enrichAll <- enrichAll %>% dplyr::select(pathID, numUp, numDown)
+        mutate(numDown = length(which(strsplit(genes,",")[[1]] %in% genesDown$ENTREZID ))) %>% 
+        mutate(numDownNeg = -length(which(strsplit(genes,",")[[1]] %in% genesDown$ENTREZID )))
+    enrichAll <- enrichAll %>% dplyr::select(pathID, numUp, numDown, numDownNeg)
+    enrichAll$pathID <- sub(  "path:", "", enrichAll$pathID )
     df <- data.frame(
         Regulation = rep(c("Up", "Down"), each = nrows),
         pathId = enrichAll$pathID,
         x = rep(1:nrows, 2),
-        DE = c(enrichAll$numUp, enrichAll$numDown)
+        DE = c(enrichAll$numUp, enrichAll$numDown),
+        DENeg = c(enrichAll$numUp, enrichAll$numDownNeg)
     )
-    colorfill <- c("#9682ba", "#a4b880")
-    p <- ggplot(df, aes(x = pathId, y = DE, fill = Regulation)) +
-        geom_bar(stat = "identity", position = "identity") + 
-        scale_y_continuous(breaks= scales::pretty_breaks()) + coord_flip() +
-        theme(axis.text.y = element_text(angle = 0, hjust = 1)) +
-        theme(axis.title.y = element_blank()) + theme(legend.position = "none") +
-        scale_fill_manual(values = colorfill)
-    p <- p %>% plotly::ggplotly()
-    return(p)
+    colorfill <- c("#3e90bd","#eb3f3f")
+    r <- ggplot(df, aes(x = pathId, y = DENeg, fill = Regulation)) +
+        geom_bar(stat = "identity", position = "identity") + coord_flip() +
+        theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
+        scale_fill_manual(values = colorfill) +
+        theme(panel.grid.major.y  = element_blank(),
+              axis.title.y = element_blank())
+    r <- r %>% plotly::ggplotly()
+    p <- ggplot(df, aes(fill = Regulation, y = DE, x = pathId)) +
+        geom_bar(position = "dodge", stat = "identity") + coord_flip() +
+        theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
+        scale_fill_manual(values = colorfill) +
+        theme(panel.grid.major.y  = element_blank(),
+              axis.title.y = element_blank())
+    p <- p %>% ggplotly()
+    q <- ggplot(df, aes(fill = Regulation, y = DE, x = pathId)) +
+        geom_bar(position = "stack", stat = "identity") + coord_flip() +
+        theme(axis.text.y = element_text(angle = 0, hjust = 1)) + theme_bw() +
+        scale_fill_manual(values = colorfill) +
+        theme(panel.grid.major.y  = element_blank(),
+              axis.title.y = element_blank())
+    q <- q %>% ggplotly()
+
+    return(list(p, q, r))
 }
-
-
 
 # Función sin uso actualmente -creo- #############
 loadGenes <- function(filegenes){
@@ -917,7 +949,7 @@ loadGenes <- function(filegenes){
   auxgenes <- genes
 }
 
-    # PCA de un objeto DESeq #####################
+# PCA de un objeto DESeq #####################
 
 plotPCA = function(object, intgroup = "condition", ntop = 500, returnData = TRUE){
   # calculate the variance for each gene

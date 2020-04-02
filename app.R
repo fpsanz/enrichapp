@@ -19,6 +19,7 @@ library(shinyBS)
 library(shinyWidgets)
 library(shinydashboardPlus)
 library(pheatmap)
+library(shinyjs)
 source("utils.R")
 options(shiny.maxRequestSize = 3000*1024^2)
 
@@ -31,6 +32,7 @@ header <- dashboardHeader(title = "RNAseq viewer and report App",
 )
 ### SIDEBAR ##########
 sidebar <- dashboardSidebar(useShinyalert(),
+                            useShinyjs(),
                             sidebarMenu(
                                 menuItem(
                                     pickerInput(
@@ -161,6 +163,8 @@ body <- dashboardBody(
               column(
                 width = 8,
                 offset = 2,
+                circleButton(inputId = "rolltable", icon = icon("plus-circle"),
+                size="xs", status = "default"),
                 DTOutput("preview")
               )
             ),
@@ -224,15 +228,30 @@ body <- dashboardBody(
                   )),
                 hr(),
                 h3("BarPlot"),
-                fluidRow(
-                  class = "text-center",
-                  column(
-                    align = "center",
+                fluidRow(column(
+                    width = 4,
                     offset = 2,
-                    plotlyOutput("keggPlotAll"),
-                    width = 8
-                  )),
-                hr(),
+                    radioGroupButtons(
+                        inputId = "selectkeggall",
+                        label = "Select bar plot type",
+                        choices = c("Dodge", "Stack", "Opposite"),
+                        selected = "Dodge",
+                        status = "primary",
+                        checkIcon = list(
+                            yes = icon("ok",
+                                       lib = "glyphicon"),
+                            no = icon("remove",
+                                      lib = "glyphicon")
+                        )
+                    ) )), # fin fluidRow, column & radioGroupButtons
+                fluidRow(class = "text-center",
+                         column(
+                             align = "center",
+                             offset = 2,
+                             plotlyOutput("keggPlotAll"),
+                             width = 8
+                         )),
+                hr(), 
                 h3("ChordPlot"),
                 fluidRow(
                   column(
@@ -407,6 +426,23 @@ body <- dashboardBody(
                           dataTableOutput("tableBPall")
                         )),
                         hr(),
+                        fluidRow(column(
+                            width = 4,
+                            offset = 2,
+                            radioGroupButtons(
+                                inputId = "selectbpall",
+                                label = "Select bar plot type",
+                                choices = c("Dodge", "Stack", "Opposite"),
+                                selected = "Dodge",
+                                status = "primary",
+                                checkIcon = list(
+                                    yes = icon("ok",
+                                               lib = "glyphicon"),
+                                    no = icon("remove",
+                                              lib = "glyphicon")
+                                )
+                            )
+                        )), # fin fluidRow, column & radioGroupButtons
                         fluidRow(
                           #plot BP
                           class = "text-center",
@@ -431,9 +467,27 @@ body <- dashboardBody(
                           dataTableOutput("tableMFall")
                         )),
                         hr(),
+                        fluidRow(column(
+                            width = 4,
+                            offset = 2,
+                            radioGroupButtons(
+                                inputId = "selectmfall",
+                                label = "Select bar plot type",
+                                choices = c("Dodge", "Stack", "Opposite"),
+                                selected = "Dodge",
+                                status = "primary",
+                                checkIcon = list(
+                                    yes = icon("ok",
+                                               lib = "glyphicon"),
+                                    no = icon("remove",
+                                              lib = "glyphicon")
+                                )
+                            )
+                        )), # fin fluidRow, column & radioGroupButtons
                         fluidRow(# plot MF
                           class = "text-center",
-                          column( align = "center",offset = 2,plotlyOutput("plotMFall"),width = 8)
+                          column( align = "center",offset = 2,
+                                  plotlyOutput("plotMFall"),width = 8)
                         ),
                         hr(),
                         fluidRow(
@@ -450,9 +504,27 @@ body <- dashboardBody(
                           column(width = 8,offset = 2,dataTableOutput("tableCCall"))
                         ),
                         hr(),
+                        fluidRow(column(
+                            width = 4,
+                            offset = 2,
+                            radioGroupButtons(
+                                inputId = "selectccall",
+                                label = "Select bar plot type",
+                                choices = c("Dodge", "Stack", "Opposite"),
+                                selected = "Dodge",
+                                status = "primary",
+                                checkIcon = list(
+                                    yes = icon("ok",
+                                               lib = "glyphicon"),
+                                    no = icon("remove",
+                                              lib = "glyphicon")
+                                )
+                            )
+                        )), # fin fluidRow, column & radioGroupButtons
                         fluidRow(# plot CC
                           class = "text-center",
-                          column(align = "center",offset = 2,plotlyOutput("plotCCall"),width = 8)
+                          column(align = "center",offset = 2,
+                                 plotlyOutput("plotCCall"),width = 8)
                         ),
                         hr(),
                         fluidRow(
@@ -630,7 +702,11 @@ server <- function(input, output, session) {
             miriam.riquelmep@gmail.com",
                imageUrl = "dna-svg-small-13.gif", 
                imageWidth = 200, imageHeight = 100)})
-  
+# toggle para show/hide tabla preview ##############
+    observeEvent(input$rolltable, {
+        toggle(id = "preview")
+    })
+    
   data <- reactiveValues() # genes
   goDT <- reactiveValues() #pretabla GO
   kgg <- reactiveValues() # enrich kegg
@@ -731,6 +807,10 @@ server <- function(input, output, session) {
   keggAllText <- reactive({input$keggAllText})
   specie <- reactive({input$specie})
   numheatmap <- reactive({input$numheatmap})
+  typeBarKeggAll <- reactive({input$selectkeggall})
+  typeBarBpAll <- reactive({input$selectbpall})
+  typeBarMfAll <- reactive({input$selectmfall})
+  typeBarCcAll <- reactive({input$selectccall})
   # InputFile
   output$deseqFile <- renderUI({
       validate(need(specie(), ""))
@@ -934,8 +1014,12 @@ server <- function(input, output, session) {
     validate(need(kgg$all, "Load file to render BarPlot"))
     rowsAll <- rowsAll()
     if(is.null( rowsAll )){ rowsAll <- c(1:10) }
-    plotKeggAll(enrichdf = kgg$all[rowsAll,], nrows = length(rowsAll ),
+    p <- plotKeggAll(enrichdf = kgg$all[rowsAll,], nrows = length(rowsAll),
                 genesUp = data$genesUp, genesDown = data$genesDown)
+    if(typeBarKeggAll() == "Dodge"){
+        print(p[[1]])   } else if(typeBarKeggAll()=="Stack"){
+            print(p[[2]])} else {print(p[[3]])}
+        
   })
   # KEGG chordiag plot All ###############
   output$keggChordAll <- renderChorddiag({
@@ -1074,8 +1158,11 @@ server <- function(input, output, session) {
     bprowsall <- bprowsall()
     if(is.null(bprowsall)){bprowsall <- c(1:10)}
     gosBP <- go$all[go$all$Ont=="BP",]
-    plotGOAll(enrichdf = gosBP[bprowsall, ], nrows = length(bprowsall), ont="BP", 
+    p <- plotGOAll(enrichdf = gosBP[bprowsall, ], nrows = length(bprowsall), ont="BP", 
               genesUp = data$genesUp, genesDown = data$genesDown)
+    if( typeBarBpAll() == "Dodge") { print(p[[1]]) }
+    else if ( typeBarBpAll() == "Stack") { print(p[[2]]) }
+    else { print(p[[3]]) }
   })
   # GO BP dotplot all ################### 
   output$BPDotall <- renderPlot({
@@ -1105,8 +1192,11 @@ server <- function(input, output, session) {
     mfrowsall <- mfrowsall()
     if(is.null(mfrowsall)){mfrowsall <- c(1:10)}
     gosMF <- go$all[go$all$Ont=="MF",]
-    plotGOAll(enrichdf = gosMF[mfrowsall, ], nrows = length(mfrowsall), ont = "MF",
-              genesUp = data$genesUp, genesDown = data$genesDown)
+    p <- plotGOAll(enrichdf = gosMF[mfrowsall, ], nrows = length(mfrowsall), ont="MF", 
+                   genesUp = data$genesUp, genesDown = data$genesDown)
+    if( typeBarMfAll() == "Dodge") { print(p[[1]]) }
+    else if ( typeBarMfAll() == "Stack") { print(p[[2]]) }
+    else { print(p[[3]]) }
   })
   # GO MF dotplot all ################### 
   output$MFDotall <- renderPlot({
@@ -1136,8 +1226,11 @@ server <- function(input, output, session) {
     ccrowsall <- ccrowsall()
     if(is.null(ccrowsall)){ccrowsall <- c(1:10)}
     gosCC <- go$all[go$all$Ont=="CC",]
-    plotGOAll(enrichdf = gosCC[ccrowsall,], nrows = length(ccrowsall), ont="CC",
-              genesUp = data$genesUp, genesDown = data$genesDown)
+    p <- plotGOAll(enrichdf = gosCC[ccrowsall, ], nrows = length(ccrowsall), ont="CC", 
+                   genesUp = data$genesUp, genesDown = data$genesDown)
+    if( typeBarCcAll() == "Dodge") { print(p[[1]]) }
+    else if ( typeBarCcAll() == "Stack") { print(p[[2]]) }
+    else { print(p[[3]]) }
   })
   # GO CC dotplot all ################### 
   output$CCDotall <- renderPlot({
